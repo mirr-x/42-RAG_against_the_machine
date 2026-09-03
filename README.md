@@ -5,3 +5,4 @@
 ## Resources
 
 - [Information Retrieval (IR)](https://app.notion.com/p/Information-Retrieval-IR-3cbe6e3c12ea80c9b7bdf2fa0f51af70)
+- [Documents, Queries, and Relevance](https://denim-bosworth-b13.notion.site/02_documents_queries_relevance-3cce6e3c12ea80cbb4b5f368ad352bb5?source=copy_link)

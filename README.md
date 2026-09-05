@@ -9,3 +9,4 @@
 - [Tokenization and Preprocessing](https://denim-bosworth-b13.notion.site/03_tokenization_preprocessing-3cee6e3c12ea800eba38e408a99c6f78?source=copy_link)
 - [Inverted Index](https://denim-bosworth-b13.notion.site/04_inverted_index-3cee6e3c12ea80669931c1075561057e?source=copy_link)
 - [Term Frequency (TF)](https://denim-bosworth-b13.notion.site/05_term_frequency_tf-3cee6e3c12ea80038f24c3e87ce60b37?source=copy_link)
+- [TF-IDF](https://denim-bosworth-b13.notion.site/08_tf_idf-3d0e6e3c12ea80679c28ffac843a1992?source=copy_link)

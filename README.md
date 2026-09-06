@@ -13,3 +13,4 @@
 - [BM25](https://denim-bosworth-b13.notion.site/09_bm25-3d1e6e3c12ea80349c11cb6d5246f961?source=copy_link)
 - [Code-Aware Chunking](https://denim-bosworth-b13.notion.site/11_Code-Aware-Chunking-3d1e6e3c12ea80e68f4cc7a87e96964c?source=copy_link)
 - [Keyword Search vs. Semantic Search](https://denim-bosworth-b13.notion.site/14_Keyword_Search_vs-_Semantic-Search-3d1e6e3c12ea8073827ffb0726fad44d?source=copy_link)
+- [BM25 vs. Embeddings: A Comparative Analysis](https://denim-bosworth-b13.notion.site/BM25-vs-Embeddings-A-Comparative-Analysis-3d1e6e3c12ea8088bce3c212d97cc09b?source=copy_link)

@@ -11,3 +11,4 @@
 - [Term Frequency (TF)](https://denim-bosworth-b13.notion.site/05_term_frequency_tf-3cee6e3c12ea80038f24c3e87ce60b37?source=copy_link)
 - [TF-IDF](https://denim-bosworth-b13.notion.site/08_tf_idf-3d0e6e3c12ea80679c28ffac843a1992?source=copy_link)
 - [BM25](https://denim-bosworth-b13.notion.site/09_bm25-3d1e6e3c12ea80349c11cb6d5246f961?source=copy_link)
+- [Code-Aware Chunking](https://denim-bosworth-b13.notion.site/11_Code-Aware-Chunking-3d1e6e3c12ea80e68f4cc7a87e96964c?source=copy_link)

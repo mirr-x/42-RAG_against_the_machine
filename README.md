@@ -16,3 +16,4 @@
 - [BM25 vs. Embeddings: A Comparative Analysis](https://denim-bosworth-b13.notion.site/BM25-vs-Embeddings-A-Comparative-Analysis-3d1e6e3c12ea8088bce3c212d97cc09b?source=copy_link)
 - [Retrieval-Augmented Generation (RAG)](https://denim-bosworth-b13.notion.site/18_RAG-3d1e6e3c12ea802e9a51f4e8b93cfc10?source=copy_link)
 - [Context Construction](https://denim-bosworth-b13.notion.site/20_Context_construction-3d1e6e3c12ea8068a12cd7bc4ae0f718?source=copy_link)
+- [Hallucination - Faithfulness](https://denim-bosworth-b13.notion.site/23_Hallucination_-_faithfulness-3d2e6e3c12ea80ff8bf8c01d0ebc8bb6?source=copy_link)

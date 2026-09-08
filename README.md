@@ -15,3 +15,4 @@
 - [Keyword Search vs. Semantic Search](https://denim-bosworth-b13.notion.site/14_Keyword_Search_vs-_Semantic-Search-3d1e6e3c12ea8073827ffb0726fad44d?source=copy_link)
 - [BM25 vs. Embeddings: A Comparative Analysis](https://denim-bosworth-b13.notion.site/BM25-vs-Embeddings-A-Comparative-Analysis-3d1e6e3c12ea8088bce3c212d97cc09b?source=copy_link)
 - [Retrieval-Augmented Generation (RAG)](https://denim-bosworth-b13.notion.site/18_RAG-3d1e6e3c12ea802e9a51f4e8b93cfc10?source=copy_link)
+- [Context Construction](https://denim-bosworth-b13.notion.site/20_Context_construction-3d1e6e3c12ea8068a12cd7bc4ae0f718?source=copy_link)

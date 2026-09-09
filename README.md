@@ -19,3 +19,4 @@
 - [Hallucination - Faithfulness](https://denim-bosworth-b13.notion.site/23_Hallucination_-_faithfulness-3d2e6e3c12ea80ff8bf8c01d0ebc8bb6?source=copy_link)
 - [Source Citation - Provenance](https://denim-bosworth-b13.notion.site/24_Source_citation-provenance-3d2e6e3c12ea805e93a0e2761b39d64b?source=copy_link)
 - [Pydantic Data Models for the RAG Pipeline](https://denim-bosworth-b13.notion.site/25_Pydantic_data_models_for_the_RAG_pipeline-3d2e6e3c12ea80f992e7c52f46e1f083?source=copy_link)
+- [RAG Datasets](https://denim-bosworth-b13.notion.site/26_RAG_datasets-3d2e6e3c12ea80539dacee0b1fff923c?source=copy_link)

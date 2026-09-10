@@ -22,3 +22,4 @@
 - [RAG Datasets](https://denim-bosworth-b13.notion.site/26_RAG_datasets-3d2e6e3c12ea80539dacee0b1fff923c?source=copy_link)
 - [Ground Truth - Relevance Judgments](https://denim-bosworth-b13.notion.site/27_Ground_truth_-_relevance_judgments-3d3e6e3c12ea80ddbc80dd323d61db62?source=copy_link)
 - [Recall@K](https://denim-bosworth-b13.notion.site/28_Recall-K-3d3e6e3c12ea80f18471e6a9fbd438ad?source=copy_link)
+- [Latency - Throughput](https://denim-bosworth-b13.notion.site/31_Latency_-_throughput-3d3e6e3c12ea8055a419e37135410aa0?source=copy_link)

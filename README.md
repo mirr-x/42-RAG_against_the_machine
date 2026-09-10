@@ -20,3 +20,4 @@
 - [Source Citation - Provenance](https://denim-bosworth-b13.notion.site/24_Source_citation-provenance-3d2e6e3c12ea805e93a0e2761b39d64b?source=copy_link)
 - [Pydantic Data Models for the RAG Pipeline](https://denim-bosworth-b13.notion.site/25_Pydantic_data_models_for_the_RAG_pipeline-3d2e6e3c12ea80f992e7c52f46e1f083?source=copy_link)
 - [RAG Datasets](https://denim-bosworth-b13.notion.site/26_RAG_datasets-3d2e6e3c12ea80539dacee0b1fff923c?source=copy_link)
+- [Ground Truth - Relevance Judgments](https://denim-bosworth-b13.notion.site/27_Ground_truth_-_relevance_judgments-3d3e6e3c12ea80ddbc80dd323d61db62?source=copy_link)

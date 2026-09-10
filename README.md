@@ -24,3 +24,4 @@
 - [Recall@K](https://denim-bosworth-b13.notion.site/28_Recall-K-3d3e6e3c12ea80f18471e6a9fbd438ad?source=copy_link)
 - [Latency - Throughput](https://denim-bosworth-b13.notion.site/31_Latency_-_throughput-3d3e6e3c12ea8055a419e37135410aa0?source=copy_link)
 - [Baseline, Measurement, and Improvement](https://denim-bosworth-b13.notion.site/33_Baseline-measure-improve-3d5e6e3c12ea80b2b876f48f7ddb6138?source=copy_link)
+- [Evaluation Metrics for RAG](https://denim-bosworth-b13.notion.site/33_Baseline-measure-improve-3d5e6e3c12ea809fa25af75b8ce85303?source=copy_link)

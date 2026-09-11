@@ -28,3 +28,4 @@
 - [Query Expansion](https://denim-bosworth-b13.notion.site/34_Query_expansion-3d5e6e3c12ea80fb8db2c0abe07014cc?source=copy_link)
 - [Hybrid Retrieval](https://denim-bosworth-b13.notion.site/35_Hybrid_retrieval-3d5e6e3c12ea80fc933cd419aa713eed?source=copy_link)
 - [Reranking](https://denim-bosworth-b13.notion.site/36_Reranking-3d6e6e3c12ea809f9291d715fc685c62?source=copy_link)
+- [Caching](https://denim-bosworth-b13.notion.site/37_Caching-3d6e6e3c12ea8045905ae277c23b95c8?source=copy_link)

@@ -27,3 +27,4 @@
 - [Evaluation Metrics for RAG](https://denim-bosworth-b13.notion.site/33_Baseline-measure-improve-3d5e6e3c12ea809fa25af75b8ce85303?source=copy_link)
 - [Query Expansion](https://denim-bosworth-b13.notion.site/34_Query_expansion-3d5e6e3c12ea80fb8db2c0abe07014cc?source=copy_link)
 - [Hybrid Retrieval](https://denim-bosworth-b13.notion.site/35_Hybrid_retrieval-3d5e6e3c12ea80fc933cd419aa713eed?source=copy_link)
+- [Reranking](https://denim-bosworth-b13.notion.site/36_Reranking-3d6e6e3c12ea809f9291d715fc685c62?source=copy_link)

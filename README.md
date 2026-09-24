@@ -1,5 +1,7 @@
 # 42-RAG_against_the_machine
 
+![Rag 42 banner](https://raw.githubusercontent.com/mirr-x/42-CC-1337/refs/heads/main/images/Rag.png)
+
 ![Code a simple RAG from scratch](https://cdn-gcs.ngxson.com/nuiblog2/2024/10/1730295080894_c8e71c38.jpg)
 
 ## Resources

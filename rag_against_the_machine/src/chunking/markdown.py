@@ -1,7 +1,7 @@
+"""  A module for chunking Markdown text into smaller, manageable pieces. """
 
 import re
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class MarkdownChunk(BaseModel):
@@ -71,3 +71,30 @@ def chunk_markdown(
             start = end
 
     return chunks
+
+
+if __name__ == "__main__":
+    sample_text = """# Heading 1
+This is some sample Markdown text.
+## Heading 2
+```python
+print("Hello, World!")
+```
+### Heading 3
+```python
+def add(a, b):
+    return a + b
+```
+# Heading 4
+This is the last section of the sample Markdown text.
+"""
+    chunks = chunk_markdown(sample_text, "sample.md", max_chunk_size=50)
+    print(f"Total Chunks: {len(chunks)}")
+    # for i, chunk in enumerate(chunks):
+    #     print(f"Chunk {i + 1}:")
+    #     print(f"File Path: {chunk.file_path}")
+    #     print(f"First Character Index: {chunk.first_character_index}")
+    #     print(f"Last Character Index: {chunk.last_character_index}")
+    #     print("Text:")
+    #     print(chunk.text)
+    #     print("-" * 40)

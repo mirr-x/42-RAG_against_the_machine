@@ -3,6 +3,7 @@
 import re
 from pydantic import BaseModel
 
+HEADING_PATTERN = re.compile(r"(?m)^#{1,6}[ \t]+.*$")
 
 class MarkdownChunk(BaseModel):
     """A chunk of Markdown linked to its original file."""
@@ -25,24 +26,37 @@ def _find_split_point(text: str, start: int, limit: int) -> int:
     return limit
 
 
+def _find_boundaries(text: str, text_length: int) -> list[int]:
+    """Find the beginning of each Markdown heading."""
+
+    headings = [match.start() for match in HEADING_PATTERN.finditer(text)]
+    return [0, *headings, text_length]
+
+
 def chunk_markdown(
     text: str,
     file_path: str,
     max_chunk_size: int = 2000,
 ) -> list[MarkdownChunk]:
-    """Split Markdown into heading-aware chunks within the size limit."""
+    """Split Markdown into heading-aware chunks within the size limit.
+
+    Args:
+        text (str): The Markdown text to be chunked.
+        file_path (str): The path to the original Markdown file.
+        max_chunk_size (int): The maximum number of characters per chunk.
+    Returns:
+        list[MarkdownChunk]: list of MarkdownChunk objs represent's the chunks.
+    """
     if max_chunk_size < 1:
         raise ValueError("max_chunk_size must be at least 1")
 
     if not text:
         return []
 
-    # Find the beginning of each Markdown heading.
-    heading_pattern = re.compile(r"(?m)^#{1,6}[ \t]+.*$")
-    headings = [match.start() for match in heading_pattern.finditer(text)]
+    text_length = len(text)
+    boundaries = _find_boundaries(text, text_length)
 
     # Use headings as preferred section boundaries.
-    boundaries = sorted(set([0, *headings, len(text)]))
     chunks: list[MarkdownChunk] = []
 
     for section_start, section_end in zip(boundaries, boundaries[1:]):

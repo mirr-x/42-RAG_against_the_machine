@@ -2,15 +2,12 @@
 
 ## Project Phases
 
-- [-] 0**Phase 0 - Understand the project:** Understand RAG, its components, and the complete pipeline.
-- [-] **Phase 1 - Set up the project:** Configure Python, `uv`, dependencies, linting, typing, and project structure.
-- [ ] **Phase 2 - Explore and ingest the codebase:** Read the vLLM repository files and preserve their exact paths.
-- [ ] **Phase 3 - Build the chunking system:** Split Python code and documentation into chunks with exact character spans.
-- [ ] **Phase 4 - Build the index:** Create and persist a BM25 or TF-IDF index.
-- [ ] **Phase 5 - Implement retrieval:** Rank chunks and return the most relevant Top-K results.
-- [ ] **Phase 6 - Implement data models and JSON:** Validate data with Pydantic and handle JSON inputs and outputs.
-- [ ] **Phase 7 - Connect Qwen and generate answers:** Generate evidence-based answers using retrieved context.
-- [ ] **Phase 8 - Build the required CLI:** Implement `index`, `search`, `search_dataset`, `answer`, `answer_dataset`, and `evaluate`.
-- [ ] **Phase 9 - Evaluate and improve Recall@K:** Measure retrieval quality and optimize performance against the required thresholds.
-- [ ] **Phase 10 - Test, document, and submit:** Test edge cases, complete the README and Makefile, and verify the full pipeline.
 
+- [-] **Phase 2 - Ingestion and Chunking:** Read files, split code and documentation, and preserve character offsets.
+- [ ] **Phase 3 - Indexing and Persistence:** Implement BM25 or TF-IDF and save the searchable index.
+- [ ] **Phase 4 - Retrieval and Search:** Implement ranking and the `search` and `search_dataset` commands.
+- [ ] **Phase 5 - Answer Generation:** Integrate Qwen3-0.6B to generate evidence-based answers.
+- [ ] **Phase 6 - Evaluation and Optimization:** Measure Recall@5 and improve retrieval performance.
+- [ ] **Phase 7 - Testing and Robustness:** Handle edge cases and validate commands, Makefile, and static checks.
+- [ ] **Phase 8 - Documentation and Defense:** Complete the README, document results, and prepare for peer evaluation.
+- [ ] **Phase 9 - Optional Bonuses:** Explore embeddings, hybrid retrieval, caching, incremental indexing, or an HTTP API.

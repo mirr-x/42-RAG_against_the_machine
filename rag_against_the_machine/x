@@ -1,0 +1,7 @@
+MarkdownChunk(text='# Heading 1\nThis is some sample Markdown text.\n', file_path='sample.md', first_character_index=0, last_character_index=46), 
+MarkdownChunk(text='## Heading 2\n```python\nprint("Hello, World!")\n```\n', file_path='sample.md', first_character_index=47, last_character_index=96), 
+MarkdownChunk(text='### Heading 3\n```python\ndef add(a, b):\n', file_path='sample.md', first_character_index=97, last_character_index=135), 
+MarkdownChunk(text='    return a + b\n```\n',file_path='sample.md', first_character_index=136, last_character_index=156), 
+MarkdownChunk(text='# Heading 4\n', file_path='sample.md', first_character_index=157, last_character_index=168), 
+MarkdownChunk(text='This is the last section of the sample Markdown ', file_path='sample.md', first_character_index=169, last_character_index=216), 
+MarkdownChunk(text='text.\n', file_path='sample.md', first_character_index=217, last_character_index=222)

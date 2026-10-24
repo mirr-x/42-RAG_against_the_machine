@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 HEADING_PATTERN = re.compile(r"(?m)^#{1,6}[ \t]+.*$")
 
+
 class MarkdownChunk(BaseModel):
     """A chunk of Markdown linked to its original file."""
 
@@ -29,7 +30,12 @@ def _find_split_point(text: str, start: int, limit: int) -> int:
 def _find_boundaries(text: str, text_length: int) -> list[int]:
     """Find the beginning of each Markdown heading."""
 
-    headings = [match.start() for match in HEADING_PATTERN.finditer(text)]
+    headings = []
+    for match in HEADING_PATTERN.finditer(text):
+        indices = match.start()
+        if indices != 0:
+            headings.append(indices)
+
     return [0, *headings, text_length]
 
 
@@ -57,7 +63,7 @@ def chunk_markdown(
     boundaries = _find_boundaries(text, text_length)
 
     # Use headings as preferred section boundaries.
-    chunks: list[MarkdownChunk] = []
+    markdown_chunks: list[MarkdownChunk] = []
 
     for section_start, section_end in zip(boundaries, boundaries[1:]):
         start = section_start
@@ -74,7 +80,7 @@ def chunk_markdown(
             if end <= start:
                 end = limit
 
-            chunks.append(
+            markdown_chunks.append(
                 MarkdownChunk(
                     text=text[start:end],
                     file_path=file_path,
@@ -84,7 +90,7 @@ def chunk_markdown(
             )
             start = end
 
-    return chunks
+    return markdown_chunks
 
 
 if __name__ == "__main__":
@@ -104,11 +110,12 @@ This is the last section of the sample Markdown text.
 """
     chunks = chunk_markdown(sample_text, "sample.md", max_chunk_size=50)
     print(f"Total Chunks: {len(chunks)}")
-    # for i, chunk in enumerate(chunks):
-    #     print(f"Chunk {i + 1}:")
-    #     print(f"File Path: {chunk.file_path}")
-    #     print(f"First Character Index: {chunk.first_character_index}")
-    #     print(f"Last Character Index: {chunk.last_character_index}")
-    #     print("Text:")
-    #     print(chunk.text)
-    #     print("-" * 40)
+    print(chunks)
+    for i, chunk in enumerate(chunks):
+        print(f"Chunk {i + 1}:")
+        print(f"File Path: {chunk.file_path}")
+        print(f"First Character Index: {chunk.first_character_index}")
+        print(f"Last Character Index: {chunk.last_character_index}")
+        print("Text:")
+        print(chunk.text)
+        print("-" * 40)

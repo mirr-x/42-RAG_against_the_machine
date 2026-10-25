@@ -61,8 +61,6 @@ def chunk_markdown(
 
     text_length = len(text)
     boundaries = _find_boundaries(text, text_length)
-
-    # Use headings as preferred section boundaries.
     markdown_chunks: list[MarkdownChunk] = []
 
     for section_start, section_end in zip(boundaries, boundaries[1:]):

@@ -1,7 +1,10 @@
 """  A module for chunking Markdown text into smaller, manageable pieces. """
 
 import re
+from pathlib import Path
+from scandir_rs import Walk
 from pydantic import BaseModel
+
 
 HEADING_PATTERN = re.compile(r"(?m)^#{1,6}[ \t]+.*$")
 
@@ -39,7 +42,7 @@ def _find_boundaries(text: str, text_length: int) -> list[int]:
     return [0, *headings, text_length]
 
 
-def chunk_markdown(
+def _chunk_markdown_file(
     text: str,
     file_path: str,
     max_chunk_size: int = 2000,
@@ -49,7 +52,7 @@ def chunk_markdown(
     Args:
         text (str): The Markdown text to be chunked.
         file_path (str): The path to the original Markdown file.
-        max_chunk_size (int): The maximum number of characters per chunk.
+        max_chunk_size (int): The max number of characters per chunk.
     Returns:
         list[MarkdownChunk]: list of MarkdownChunk objs represent's the chunks.
     """
@@ -91,29 +94,45 @@ def chunk_markdown(
     return markdown_chunks
 
 
-if __name__ == "__main__":
-    sample_text = """# Heading 1
-This is some sample Markdown text.
-## Heading 2
-```python
-print("Hello, World!")
-```
-### Heading 3
-```python
-def add(a, b):
-    return a + b
-```
-# Heading 4
-This is the last section of the sample Markdown text.
-"""
-    chunks = chunk_markdown(sample_text, "sample.md", max_chunk_size=50)
-    print(f"Total Chunks: {len(chunks)}")
-    print(chunks)
-    for i, chunk in enumerate(chunks):
-        print(f"Chunk {i + 1}:")
-        print(f"File Path: {chunk.file_path}")
-        print(f"First Character Index: {chunk.first_character_index}")
-        print(f"Last Character Index: {chunk.last_character_index}")
-        print("Text:")
-        print(chunk.text)
-        print("-" * 40)
+def chunk_markdown_corpus_with_rust(
+    corpus_root: Path,
+    output_path: Path,
+    max_chunk_size: int = 2000
+) -> int:
+    """ Chunk a corpus of Markdown files using Rust for performance.
+
+    Args:
+        corpus_root (Path): root dir containing the md files to be chunked.
+        project_root (Path): The root directory of the project.
+        output_path (Path): path to the output file where chunks will be saved.
+        max_chunk_size (int, optional): The max number of characters per chunk.
+
+    Returns:
+        int: The number of chunks created.
+    """
+    if output_path.exists():
+        print(f"'{output_path}' already exists. Skipping chunking step.")
+        return 0
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    chunk_count = 0
+
+    walker = Walk(str(corpus_root), store=False)
+
+    with open(output_path, 'w', encoding='utf-8') as output_file:
+        for cur_dir, _, files in walker:
+            for filename in sorted(files):
+                if filename.lower().endswith('.md'):
+                    file_path = corpus_root / cur_dir / filename
+                    
+                    print(f"Chunking '{file_path}'...")
+                    text = file_path.read_text(encoding='utf-8')
+                    chunks = _chunk_markdown_file(
+                        text=text,
+                        file_path=str(file_path),
+                        max_chunk_size=max_chunk_size
+                    )
+                    for chunk in chunks:
+                        output_file.write(chunk.model_dump_json() + '\n')
+                        chunk_count += 1
+    return chunk_count

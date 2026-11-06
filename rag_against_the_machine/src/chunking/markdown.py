@@ -178,19 +178,18 @@ def chunk_markdown_corpus_with_rust(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     chunk_count = 0
 
-    walker = Walk(str(corpus_root), store=False)
+    walker = Walk(str(project_root / corpus_root), store=False)
 
     with open(output_path, 'w', encoding='utf-8') as output_file:
         for cur_dir, _, files in walker:
             for filename in sorted(files):
                 if filename.lower().endswith('.md'):
-                    file_path = corpus_root / cur_dir / filename
-                    relative_path = file_path.relative_to(project_root)
+                    file_path = project_root / corpus_root / cur_dir / filename
 
                     text = file_path.read_text(encoding='utf-8')
                     chunks = _chunk_markdown_file(
                         text=text,
-                        file_path=str(relative_path),
+                        file_path=str(corpus_root / cur_dir / filename),
                         max_chunk_size=max_chunk_size
                     )
                     for chunk in chunks:

@@ -19,32 +19,50 @@ class CodeChunk(BaseModel):
     parent_context: Optional[str] = None
 
 class ASTCodeChunker:
-    def __init__(self, file_path: str, source_code: str, max_chunk_size: int) -> None:
-        self.file_path = file_path
-        self.source_code = source_code
+    def __init__(self, file_path: Path, max_chunk_size: int) -> None:
+        self.file_path = str(file_path)
+        self.source_code = file_path.read_text(encoding='utf-8')
+        self.source_lines = self.source_code.splitlines()
 
-    def _extract_signature(self, node: ast.AST) -> str:
-        x = node.
-        pass
+    def _extract_signature(self,node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> str:
+        """Extracts the exact definition/signature line(s) of a function or class."""
+        sig = self.source_lines[node.lineno - 1: node.body[0].lineno - 1]
+        return ''.join(sig).strip()
+
+    def _get_source_segment(self, start: int, end: int) -> str:
+        """ Extracts raw source lines """
+        body = self.source_lines[start - 1: end]
+        return ''.join(body)
 
     def _creat_function_chunck(
         self,
         node: ast.FunctionDef | ast.AsyncFunctionDef,
-        file_path: str,
         parent_classe: Optional[str] = None,
         ) -> CodeChunk:
-        """ Creat a code chunk """
+        """ Creat a CodeChunk """
 
         type = 'function' if isinstance(node, ast.FunctionDef) else 'async_function'
         return CodeChunk(
             name=node.name,
             type=type,
-            signature=_extract_signature(node),
-            body=_extract_body(node.lineno, (node.end_lineno or node.lineno)),
-            file_path=file_path,
+            signature=self._extract_signature(node),
+            body=self._get_source_segment(node.lineno, (node.end_lineno or node.lineno)),
+            file_path=self.file_path,
             start_line=node.lineno,
             end_line=node.end_lineno or node.lineno,
             parent_context=f'class {parent_classe}' if parent_classe else None
+        )
+
+    def _create_empty_class_chunk(self, node: ast.ClassDef) -> CodeChunk:
+        """Create a chunk for a class that does not contain methods."""
+        return CodeChunk(
+            name=node.name,
+            type='class',
+            signature=self._extract_signature(node),
+            body=self._get_source_segment(node.lineno, node.end_lineno or node.lineno),
+            file_path=self.file_path,
+            start_line=node.lineno,
+            end_line=node.end_lineno or node.lineno,
         )
 
     def _chunks_python_file(self) -> list[CodeChunk]:
@@ -60,8 +78,16 @@ class ASTCodeChunker:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 chunks.append(self._creat_function_chunck(node))
             elif isinstance(node, ast.ClassDef):
-                
-                pass
+                class_sig = self._extract_signature(node)
+                method_found = False
+
+                for sub_node in node.body:
+                    if isinstance(sub_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        method_found = True
+                        chunks.append(self._creat_function_chunck(sub_node, class_sig))
+                if not method_found:
+                    chunks.append(self._create_empty_class_chunk(node))
+        return chunks
 
 
 def chunk_python_corpus_with_rust(
@@ -94,11 +120,10 @@ def chunk_python_corpus_with_rust(
         for root, _, files in walker:
             for filename in sorted(files):
                 if filename.lower().endswith('.py'):
-                    file_path = project_root / corpus_root / root / filename
+                    file_path = 
 
                     chunker = ASTCodeChunker(
-                        file_path=str(corpus_root / root / filename),
-                        source_code=file_path.read_text(encoding='utf-8'),
+                        file_path=(project_root / corpus_root / root / filename),
                         max_chunk_size=max_chunk_size
                     )
                     chunks = chunker._chunks_python_file()

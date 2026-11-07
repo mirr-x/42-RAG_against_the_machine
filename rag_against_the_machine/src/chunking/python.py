@@ -163,7 +163,26 @@ class ASTCodeChunker:
             metadata=metadata,
         )
 
+    def _create_module_chunks(self, nodes: list[ast.stmt]) -> list[Chunk]:
+        if not nodes:
+            return []
 
+        first_node = nodes[0]
+        last_node = nodes[-1]
+        metadata = CodeChunk(
+            name='<module>',
+            type='module',
+            signature=''
+        )
+        content = self._get_source_segment(
+                    first_node.lineno,
+                    last_node.end_lineno or last_node.lineno,
+                )
+        return self._create_chunks(
+            content=content,
+            start_line=first_node.lineno,
+            metadata=metadata
+        )
 
     def chunks_python_file(self) -> list[Chunk]:
         """Parse Python code into AST-based chunks."""

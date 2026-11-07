@@ -3,19 +3,11 @@
 import re
 from pathlib import Path
 from scandir_rs import Walk
-from pydantic import BaseModel
+
+from src.chunking.models import MarkdownChunk
 
 
 HEADING_PATTERN = re.compile(r"(?m)^#{1,6}[ \t]+.*$")
-
-
-class MarkdownChunk(BaseModel):
-    """A chunk of Markdown linked to its original file."""
-
-    text: str
-    file_path: str
-    first_character_index: int
-    last_character_index: int
 
 
 def _find_split_point(text: str, start: int, limit: int) -> int:

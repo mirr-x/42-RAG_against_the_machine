@@ -13,7 +13,7 @@ class Chunk(BaseModel):
     chunk_type: str
     start_line: int
     end_line: int
-    Metadata: MarkdownChunk | CodeChunk
+    metadata: MarkdownChunk | CodeChunk
 
 
 class Chunking:

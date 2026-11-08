@@ -20,8 +20,8 @@ def test_module_level_statements_are_chunked(tmp_path: Path) -> None:
     chunks = ASTCodeChunker(source_path).chunks_python_file()
 
     assert len(chunks) == 1
-    assert chunks[0].Metadata.name == "<module>"
-    assert chunks[0].Metadata.type == "module"
+    assert chunks[0].metadata.name == "<module>"
+    assert chunks[0].metadata.type == "module"
     assert chunks[0].content == source
     assert chunks[0].start_line == 1
     assert chunks[0].end_line == 6
@@ -41,7 +41,7 @@ def test_module_statements_are_kept_around_definitions(tmp_path: Path) -> None:
 
     chunks = ASTCodeChunker(source_path).chunks_python_file()
 
-    assert [chunk.Metadata.type for chunk in chunks] == [
+    assert [chunk.metadata.type for chunk in chunks] == [
         "module",
         "function",
         "module",
@@ -49,3 +49,44 @@ def test_module_statements_are_kept_around_definitions(tmp_path: Path) -> None:
     assert chunks[0].content == "import os\n"
     assert chunks[1].content == "def get_path():\n    return os.getcwd()\n"
     assert chunks[2].content == "VALUE = 42\n"
+
+
+def test_nested_function_is_chunked_with_parent_context(
+    tmp_path: Path,
+) -> None:
+    source = (
+        "def outer():\n"
+        "    def inner():\n"
+        "        return 42\n"
+        "    return inner()\n"
+    )
+    source_path = tmp_path / "example.py"
+    source_path.write_text(source, encoding="utf-8")
+
+    chunks = ASTCodeChunker(source_path).chunks_python_file()
+
+    assert [chunk.metadata.name for chunk in chunks] == ["outer", "inner"]
+    assert chunks[1].metadata.parent_context == "function outer"
+
+
+def test_nested_class_and_method_are_chunked_with_parent_context(
+    tmp_path: Path,
+) -> None:
+    source = (
+        "class Outer:\n"
+        "    class Inner:\n"
+        "        def method(self):\n"
+        "            return 42\n"
+    )
+    source_path = tmp_path / "example.py"
+    source_path.write_text(source, encoding="utf-8")
+
+    chunks = ASTCodeChunker(source_path).chunks_python_file()
+
+    assert [chunk.metadata.name for chunk in chunks] == [
+        "Outer",
+        "Inner",
+        "method",
+    ]
+    assert chunks[1].metadata.parent_context == "class Outer"
+    assert chunks[2].metadata.parent_context == "class Outer > class Inner"

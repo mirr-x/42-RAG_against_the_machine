@@ -39,9 +39,26 @@ class ASTCodeChunker:
             return node.decorator_list[0].lineno
         return node.lineno
 
+    @staticmethod
+    def _extend_context(parent_context: str | None, curr_context: str) -> str:
+        """Append a definition to its parent context."""
+
+        if parent_context is None:
+            return curr_context
+        return f"{parent_context} > {curr_context}"
+
+    # @ DONE
+    @staticmethod
+    def _travers_nested_definitions(node: ast.AST) -> Iterator[DefinitionNode]:
+        """ Iterate over nested definitions within a node. """
+        for child in ast.walk(node):
+            if child is not node and isinstance(child, DefinitionTypes):
+                yield child
+
     def _extract_signature(self, node: DefinitionNode) -> str:
         """Extract decorators and the definition header."""
-
+        start_line = self._definition_start_line(node)
+        first_body_line = node.body[0].lineno
         sig = self.source_lines[
             node.lineno - 1: node.body[0].lineno - 1
         ]
@@ -49,7 +66,6 @@ class ASTCodeChunker:
 
     def _get_source_segment(self, start: int, end: int) -> str:
         """Extract original source lines."""
-
         return "".join(self.source_lines[start - 1:end])
 
     def _create_chunks(
@@ -151,24 +167,6 @@ class ASTCodeChunker:
             metadata=metadata,
         )
 
-    @staticmethod
-    def _extend_context(
-        parent_context: str | None,
-        current_context: str,
-    ) -> str:
-        """Append a definition to its parent context."""
-
-        if parent_context is None:
-            return current_context
-        return f"{parent_context} > {current_context}"
-
-    # @ DONE
-    @staticmethod
-    def _traverse_nested_definitions(node: ast.AST) -> Iterator[DefinitionNode]:
-        """ Iterate over nested definitions within a node. """
-        for child in ast.walk(node):
-            if child is not node and isinstance(child, DefinitionTypes):
-                yield child
 
     def _create_definition_chunks(
         self,
@@ -297,7 +295,7 @@ class ASTCodeChunker:
             else:
                 module_nodes.append(node)
                 # Traverse nested functions and classes
-                for child in self._traverse_nested_definitions(node):
+                for child in self._travers_nested_definitions(node):
                     chunks.extend(
                         self._create_definition_chunks(child, '<module>'))
 

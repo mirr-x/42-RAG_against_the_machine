@@ -5,11 +5,16 @@
 import ast
 import uuid
 from pathlib import Path
+from typing import Iterator
 
 from scandir_rs import Walk
 
 from src.chunking.chuncking import Chunk
 from src.chunking.models import CodeChunk
+
+
+DefinitionNode = ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
+DefinitionTypes = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
 
 
 class ASTCodeChunker:
@@ -26,11 +31,16 @@ class ASTCodeChunker:
         # Keep newline characters to preserve the original source.
         self.source_lines = self.source_code.splitlines(keepends=True)
 
-    def _extract_signature(
-        self,
-        node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
-    ) -> str:
-        """Extract the signature of a function or class."""
+    # @ DONE
+    @staticmethod
+    def _definition_start_line(node: DefinitionNode) -> int:
+        """Return the first decorator line, or the definition line."""
+        if node.decorator_list:
+            return node.decorator_list[0].lineno
+        return node.lineno
+
+    def _extract_signature(self, node: DefinitionNode) -> str:
+        """Extract decorators and the definition header."""
 
         sig = self.source_lines[
             node.lineno - 1: node.body[0].lineno - 1
@@ -77,11 +87,13 @@ class ASTCodeChunker:
 
         source_lines = content.splitlines(keepends=True)
         for line_number, line in enumerate(source_lines, start_line):
-            c_line = len(line)
+            line_size = len(line)
+
             # Rare case
-            if c_line > self.max_chunk_size:
+            # A single line is larger than the complete chunk limit.
+            if line_size > self.max_chunk_size:
                 save_whatever_lines_were_gathered_before()
-                for offset in range(0, c_line, self.max_chunk_size):
+                for offset in range(0, line_size, self.max_chunk_size):
                     part = line[offset:offset + self.max_chunk_size]
                     chunks.append(
                         Chunk(
@@ -96,21 +108,22 @@ class ASTCodeChunker:
                     )
                 continue
 
-            if c_line + curr_size > self.max_chunk_size:
+            if line_size + curr_size > self.max_chunk_size:
                 save_whatever_lines_were_gathered_before()
+            if not curr_lines:
+                curr_start = line_number
 
-            curr_size += c_line
+            curr_size += line_size
             curr_end = line_number
             curr_lines.append(line)
 
         save_whatever_lines_were_gathered_before()
-
         return chunks
 
     def _create_function_chunks(
         self,
         node: ast.FunctionDef | ast.AsyncFunctionDef,
-        parent_class: str | None = None,
+        parent_context: str | None = None,
     ) -> list[Chunk]:
         """Create one or more chunks for a function or method."""
 
@@ -124,9 +137,7 @@ class ASTCodeChunker:
             name=node.name,
             type=type_,
             signature=self._extract_signature(node),
-            parent_context=(
-                f"class {parent_class}" if parent_class else None
-            ),
+            parent_context=parent_context,
         )
 
         content = self._get_source_segment(
@@ -140,9 +151,89 @@ class ASTCodeChunker:
             metadata=metadata,
         )
 
+    @staticmethod
+    def _extend_context(
+        parent_context: str | None,
+        current_context: str,
+    ) -> str:
+        """Append a definition to its parent context."""
+
+        if parent_context is None:
+            return current_context
+        return f"{parent_context} > {current_context}"
+
+    # @ DONE
+    @staticmethod
+    def _traverse_nested_definitions(node: ast.AST) -> Iterator[DefinitionNode]:
+        """ Iterate over nested definitions within a node. """
+        for child in ast.walk(node):
+            if child is not node and isinstance(child, DefinitionTypes):
+                yield child
+
+    def _create_definition_chunks(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef,
+        parent_context: str | None = None,
+    ) -> list[Chunk]:
+        """Create chunks for a definition and nested definitions."""
+
+        chunks: list[Chunk] = []
+
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            chunks.extend(
+                self._create_function_chunks(node, parent_context)
+            )
+            child_context = self._extend_context(
+                parent_context,
+                f"function {node.name}",
+            )
+            child_definitions = (
+                child for child in node.body
+                if isinstance(
+                    child,
+                    (
+                        ast.FunctionDef,
+                        ast.AsyncFunctionDef,
+                        ast.ClassDef,
+                    ),
+                )
+            )
+            for child in child_definitions:
+                chunks.extend(
+                    self._create_definition_chunks(child, child_context)
+                )
+            return chunks
+
+        direct_methods = [
+            child for child in node.body
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ]
+        class_context = self._extend_context(
+            parent_context,
+            f"class {node.name}",
+        )
+
+        if not direct_methods or parent_context is not None:
+            chunks.extend(
+                self._create_empty_class_chunks(node, parent_context)
+            )
+
+        for child in node.body:
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                chunks.extend(
+                    self._create_definition_chunks(child, class_context)
+                )
+            elif isinstance(child, ast.ClassDef):
+                chunks.extend(
+                    self._create_definition_chunks(child, class_context)
+                )
+
+        return chunks
+
     def _create_empty_class_chunks(
         self,
         node: ast.ClassDef,
+        parent_context: str | None = None,
     ) -> list[Chunk]:
         """Create chunks for a class without methods."""
 
@@ -150,6 +241,7 @@ class ASTCodeChunker:
             name=node.name,
             type="class",
             signature=self._extract_signature(node),
+            parent_context=parent_context,
         )
 
         content = self._get_source_segment(
@@ -163,6 +255,7 @@ class ASTCodeChunker:
             metadata=metadata,
         )
 
+    # @ DONE
     def _create_module_chunks(self, nodes: list[ast.stmt]) -> list[Chunk]:
         if not nodes:
             return []
@@ -185,60 +278,33 @@ class ASTCodeChunker:
         )
 
     def chunks_python_file(self) -> list[Chunk]:
-        """Parse Python code into AST-based chunks."""
-
+        """Parse Python file and produce structured code chunks."""
         try:
             tree = ast.parse(self.source_code)
         except SyntaxError as error:
             print(
-                f"Skipping file {self.file_path} "
-                f"due to SyntaxError: {error}"
-            )
+                f"Skipping file {self.file_path} due to SyntaxError: {error}")
             return []
 
         chunks: list[Chunk] = []
-
-        function_types = (
-            ast.FunctionDef,
-            ast.AsyncFunctionDef,
-        )
         module_nodes: list[ast.stmt] = []
 
         for node in tree.body:
-
-            if isinstance(node, function_types):
+            if isinstance(node, DefinitionTypes):
                 chunks.extend(self._create_module_chunks(module_nodes))
                 module_nodes = []
-                chunks.extend(self._create_function_chunks(node))
-
-            elif isinstance(node, ast.ClassDef):
-                chunks.extend(self._create_module_chunks(module_nodes))
-                module_nodes = []
-                method_found = False
-
-                for sub_node in node.body:
-                    if isinstance(sub_node, function_types):
-                        method_found = True
-
-                        chunks.extend(
-                            self._create_function_chunks(
-                                sub_node,
-                                parent_class=node.name,
-                            )
-                        )
-
-                if not method_found:
-                    chunks.extend(
-                        self._create_empty_class_chunks(node)
-                    )
+                chunks.extend(self._create_definition_chunks(node))
             else:
                 module_nodes.append(node)
+                # Traverse nested functions and classes
+                for child in self._traverse_nested_definitions(node):
+                    chunks.extend(
+                        self._create_definition_chunks(child, '<module>'))
 
         chunks.extend(self._create_module_chunks(module_nodes))
-
         return chunks
 
-
+# @ DONE
 def chunk_python_corpus_with_rust(
     project_root: Path,
     corpus_root: Path,
@@ -274,9 +340,7 @@ def chunk_python_corpus_with_rust(
                     max_chunk_size=max_chunk_size,
                 )
 
-                chunks = chunker.chunks_python_file()
-
-                for chunk in chunks:
+                for chunk in chunker.chunks_python_file():
                     output_file.write(chunk.model_dump_json() + "\n")
                     chunk_count += 1
 

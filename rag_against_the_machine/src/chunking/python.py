@@ -156,13 +156,11 @@ class ASTCodeChunker:
             signature=self._extract_signature(node),
             parent_context=parent_context,
         )
+        start_line = self._definition_start_line(node)
+        end_line = node.end_lineno or node.lineno
+        content = self._get_source_segment(start_line, end_line)
 
-        content = self._get_source_segment(
-            node.lineno,
-            node.end_lineno or node.lineno,
-        )
-
-        return self._create_chunks(content, node.lineno, metadata)
+        return self._create_chunks(content, start_line, metadata)
 
     # ! NOT DONE ONLY LEFT TO END CHUNKING code
     def _create_class_chunks(
@@ -279,26 +277,27 @@ class ASTCodeChunker:
         try:
             tree = ast.parse(self.source_code)
         except SyntaxError as error:
-            print(
-                f"Skipping file {self.file_path} due to SyntaxError: {error}")
+            print(f"Skipping file {self.file_path} due to SyntaxError: {error}")
             return []
 
         chunks: list[Chunk] = []
         module_nodes: list[ast.stmt] = []
 
+        def flush_module_nodes():
+            nonlocal module_nodes
+            if module_nodes:
+                chunks.extend(self._create_module_chunks(module_nodes))
+                module_nodes.clear()
+
         for node in tree.body:
             if isinstance(node, DefinitionTypes):
-                chunks.extend(self._create_module_chunks(module_nodes))
-                module_nodes = []
+                flush_module_nodes()
                 chunks.extend(self._generate_chunks_for_node(node))
             else:
                 module_nodes.append(node)
-                # Traverse nested functions and classes
-                for child in self._travers_nested_definitions(node):
-                    chunks.extend(
-                        self._generate_chunks_for_node(child, '<module>'))
-
-        chunks.extend(self._create_module_chunks(module_nodes))
+                
+        flush_module_nodes()
+        
         return chunks
 
 # @ DONE

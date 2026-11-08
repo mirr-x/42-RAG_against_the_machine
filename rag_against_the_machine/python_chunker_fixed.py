@@ -34,20 +34,6 @@ class ASTCodeChunker:
         self.source_lines = self.source_code.splitlines(keepends=True)
 
 
-    @staticmethod
-    def _iter_nested_definitions(node: ast.AST) -> Iterator[DefinitionNode]:
-        """Yield nested definitions using a simple flat loop."""
-        definition_types = (
-            ast.FunctionDef,
-            ast.AsyncFunctionDef,
-            ast.ClassDef,
-        )
-
-        # ast.walk visits every single node underneath without needin recursion
-        for child in ast.walk(node):
-            if child is not node and isinstance(child, definition_types):
-                yield child
-
     def _create_class_chunks(
         self,
         node: ast.ClassDef,

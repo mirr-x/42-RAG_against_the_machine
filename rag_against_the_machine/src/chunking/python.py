@@ -55,14 +55,15 @@ class ASTCodeChunker:
             if child is not node and isinstance(child, DefinitionTypes):
                 yield child
 
+    # @ DONE
     def _extract_signature(self, node: DefinitionNode) -> str:
         """Extract decorators and the definition header."""
         start_line = self._definition_start_line(node)
         first_body_line = node.body[0].lineno
-        sig = self.source_lines[
-            node.lineno - 1: node.body[0].lineno - 1
-        ]
-        return "".join(sig).strip()
+
+        # Automatically picks the correct end line using max
+        end_line = max(node.lineno, first_body_line - 1)
+        return self._get_source_segment(start_line, end_line).strip()
 
     def _get_source_segment(self, start: int, end: int) -> str:
         """Extract original source lines."""
@@ -161,11 +162,7 @@ class ASTCodeChunker:
             node.end_lineno or node.lineno,
         )
 
-        return self._create_chunks(
-            content=content,
-            start_line=node.lineno,
-            metadata=metadata,
-        )
+        return self._create_chunks(content, node.lineno, metadata)
 
 
     def _create_definition_chunks(

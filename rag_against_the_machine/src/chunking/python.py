@@ -9,8 +9,7 @@ from typing import Iterator
 
 from scandir_rs import Walk
 
-from src.chunking.chuncking import Chunk
-from src.chunking.models import CodeChunk
+from src.chunking.models import Chunk, CodeChunk
 
 
 DefinitionNode = ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
@@ -31,7 +30,6 @@ class ASTCodeChunker:
         # Keep newline characters to preserve the original source.
         self.source_lines = self.source_code.splitlines(keepends=True)
 
-    # @ DONE
     @staticmethod
     def _definition_start_line(node: DefinitionNode) -> int:
         """Return the first decorator line, or the definition line."""
@@ -47,7 +45,6 @@ class ASTCodeChunker:
             return curr_context
         return f"{parent_context} > {curr_context}"
 
-    # @ DONE
     @staticmethod
     def _travers_nested_definitions(node: ast.AST) -> Iterator[DefinitionNode]:
         """ Iterate over nested definitions within a node. """
@@ -55,7 +52,6 @@ class ASTCodeChunker:
             if child is not node and isinstance(child, DefinitionTypes):
                 yield child
 
-    # @ DONE
     def _extract_signature(self, node: DefinitionNode) -> str:
         """Extract decorators and the definition header."""
         start_line = self._definition_start_line(node)
@@ -161,7 +157,6 @@ class ASTCodeChunker:
         content = self._get_source_segment(start_line, end_line)
         return self._create_chunks(content, start_line, metadata)
 
-    # ! NOT DONE ONLY LEFT TO END CHUNKING code
     def _create_class_chunks(
         self,
         node: ast.ClassDef,
@@ -241,7 +236,6 @@ class ASTCodeChunker:
 
         return chunks
 
-    # @ DONE
     def _create_module_chunks(self, nodes: list[ast.stmt]) -> list[Chunk]:
         if not nodes:
             return []
@@ -263,7 +257,6 @@ class ASTCodeChunker:
             metadata=metadata
         )
 
-    # @ DONE
     def chunks_python_file(self) -> list[Chunk]:
         """Parse Python file and produce structured code chunks."""
         try:
@@ -293,7 +286,6 @@ class ASTCodeChunker:
         return chunks
 
 
-# @ DONE
 def chunk_python_corpus_with_rust(
     project_root: Path,
     corpus_root: Path,

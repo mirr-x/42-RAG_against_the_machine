@@ -21,3 +21,15 @@ class CodeChunk(BaseModel):
     type: str
     signature: str
     parent_context: Optional[str] = None
+
+
+class Chunk(BaseModel):
+    """A standardized chunk representation for Python and Markdown files."""
+
+    id: str
+    content: str
+    file_path: str
+    chunk_type: str
+    start_line: int
+    end_line: int
+    metadata: MarkdownChunk | CodeChunk

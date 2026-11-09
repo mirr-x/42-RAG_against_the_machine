@@ -2,21 +2,23 @@
 
 from pathlib import Path
 
-from src.chunking.python import chunk_python_corpus_with_rust
+from src.chunking.chuncking import Chunking
 
 ROOT = Path.cwd()
-CORPUS_ROOT = Path('data/raw/vllm-0.10.1/docs')
+CORPUS_DOCS_ROOT = Path('data/raw/vllm-0.10.1/docs')
+CORPUS_CODE_ROOT = Path('data/raw/vllm-0.10.1/code')
 CHUNKS_FILE = ROOT / 'data/raw/processed/chunks.jsonl'
 
 
 if __name__ == '__main__':
     try:
-        count = chunk_python_corpus_with_rust(
+        chunking = Chunking(
             project_root=ROOT,
-            corpus_root=CORPUS_ROOT,
+            corpus_docs_root=CORPUS_ROOT,
+            corpus_code_root=CORPUS_CODE_ROOT,
             output_path=CHUNKS_FILE,
             max_chunk_size=1000
         )
-        print(f"Chunks written: {count}")
+        chunking.run()
     except ValueError as e:
         print(f"Error: {e}")

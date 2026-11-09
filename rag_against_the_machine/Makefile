@@ -4,6 +4,9 @@ uv:
 
 install: uv
 	@~/.local/bin/uv sync
+
+run:
+	uv run python -m src
 	
 
 clean:

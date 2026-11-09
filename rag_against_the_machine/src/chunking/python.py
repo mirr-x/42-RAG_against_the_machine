@@ -159,7 +159,6 @@ class ASTCodeChunker:
         start_line = self._definition_start_line(node)
         end_line = node.end_lineno or node.lineno
         content = self._get_source_segment(start_line, end_line)
-
         return self._create_chunks(content, start_line, metadata)
 
     # ! NOT DONE ONLY LEFT TO END CHUNKING code
@@ -168,7 +167,7 @@ class ASTCodeChunker:
         node: ast.ClassDef,
         parent_context: str | None = None,
     ) -> list[Chunk]:
-        """Create class chunks without duplicating method implementations."""
+        """Create class chunks, grouping class-level statements together."""
         metadata = CodeChunk(
             name=node.name,
             type="class",
@@ -178,24 +177,34 @@ class ASTCodeChunker:
 
         chunks: list[Chunk] = []
         class_start = self._definition_start_line(node)
-        header_end = node.body[0].lineno - 1
+        first_body_line = node.body[0].lineno
+        header_end = first_body_line - 1
+        class_nodes: list[ast.stmt] = []
 
-        # Extract decorators and class header.
+        def flush_class_nodes():
+            nonlocal class_nodes
+            if class_nodes:
+                start = class_nodes[0].lineno
+                end = class_nodes[-1].end_lineno or class_nodes[-1].lineno
+                content = self._get_source_segment(start, end)
+                chunks.extend(self._create_chunks(content, start, metadata))
+                class_nodes.clear()
+
+        # 1. Extract decorators and class header as the first chunk
         if header_end >= class_start:
             header = self._get_source_segment(class_start, header_end)
             chunks.extend(self._create_chunks(header, class_start, metadata))
 
-        # Extract class-level statements, skipping any definitions.
+        # 2. Ignore non-definition class body statements (docstrings, fields)
         for child in node.body:
             if any(isinstance(descendant, DefinitionTypes) for descendant in ast.walk(child)):
+                flush_class_nodes()  # Flush pending attributes/docstrings before a method
                 continue
+            class_nodes.append(child)
 
-            start = child.lineno
-            end = child.end_lineno or start
-            content = self._get_source_segment(start, end)
-            chunks.extend(self._create_chunks(content, start, metadata))
+        flush_class_nodes()
 
-        # Preserve single-line classes.
+        # case for single-line classes
         if not chunks:
             content = self._get_source_segment(
                 class_start,
@@ -282,6 +291,7 @@ class ASTCodeChunker:
         flush_module_nodes()
         
         return chunks
+
 
 # @ DONE
 def chunk_python_corpus_with_rust(

@@ -169,7 +169,6 @@ class ASTCodeChunker:
         parent_context: str | None = None,
     ) -> list[Chunk]:
         """Create class chunks without duplicating method implementations."""
-
         metadata = CodeChunk(
             name=node.name,
             type="class",
@@ -178,41 +177,25 @@ class ASTCodeChunker:
         )
 
         chunks: list[Chunk] = []
-
         class_start = self._definition_start_line(node)
-        first_body_line = node.body[0].lineno
+        header_end = node.body[0].lineno - 1
 
-        # Extract decorators and the class declaration.
-        header_end = first_body_line - 1
-
+        # Extract decorators and class header.
         if header_end >= class_start:
             header = self._get_source_segment(class_start, header_end)
             chunks.extend(self._create_chunks(header, class_start, metadata))
 
-        # Extract class-level statements, excluding definitions.
+        # Extract class-level statements, skipping any definitions.
         for child in node.body:
-
-            # Methods and nested classes are chunked separately.
-            if isinstance(child, DefinitionTypes):
+            if any(isinstance(descendant, DefinitionTypes) for descendant in ast.walk(child)):
                 continue
 
-            # Skip statements containing nested definitions.
-            contains_definition = any(
-                isinstance(descendant, DefinitionTypes)
-                for descendant in ast.walk(child)
-            )
-
-            if contains_definition:
-                continue
-
-            # Extract the original source of the class-level statement.
             start = child.lineno
             end = child.end_lineno or start
-
             content = self._get_source_segment(start, end)
             chunks.extend(self._create_chunks(content, start, metadata))
 
-        # Preserve classes whose header and body share one line.
+        # Preserve single-line classes.
         if not chunks:
             content = self._get_source_segment(
                 class_start,
@@ -221,7 +204,6 @@ class ASTCodeChunker:
             chunks.extend(self._create_chunks(content, class_start, metadata))
 
         return chunks
-
 
     def _generate_chunks_for_node(
         self,
@@ -272,6 +254,7 @@ class ASTCodeChunker:
             metadata=metadata
         )
 
+    # @ DONE
     def chunks_python_file(self) -> list[Chunk]:
         """Parse Python file and produce structured code chunks."""
         try:

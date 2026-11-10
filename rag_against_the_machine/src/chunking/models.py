@@ -32,4 +32,6 @@ class Chunk(BaseModel):
     chunk_type: str
     start_line: int
     end_line: int
+    first_character_index: int
+    last_character_index: int
     metadata: MarkdownChunk | CodeChunk

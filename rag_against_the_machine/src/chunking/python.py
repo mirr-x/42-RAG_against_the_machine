@@ -29,6 +29,11 @@ class ASTCodeChunker:
 
         # Keep newline characters to preserve the original source.
         self.source_lines = self.source_code.splitlines(keepends=True)
+        self.line_offsets = []
+        character_offset = 0
+        for line in self.source_lines:
+            self.line_offsets.append(character_offset)
+            character_offset += len(line)
 
     @staticmethod
     def _definition_start_line(node: DefinitionNode) -> int:
@@ -78,6 +83,9 @@ class ASTCodeChunker:
         curr_size = 0
         curr_start = start_line
         curr_end = start_line
+        content_start = self.line_offsets[start_line - 1]
+        curr_char_start = content_start
+        curr_char_end = content_start - 1
 
         def save_whatever_lines_were_gathered_before():
             nonlocal curr_lines, curr_size
@@ -92,13 +100,16 @@ class ASTCodeChunker:
                     chunk_type='code',
                     start_line=curr_start,
                     end_line=curr_end,
+                    first_character_index=curr_char_start,
+                    last_character_index=curr_char_end,
                     metadata=metadata
                 )
             )
-            curr_lines = []
+            curr_lines.clear()
             curr_size = 0
 
         source_lines = content.splitlines(keepends=True)
+        character_offset = content_start
         for line_number, line in enumerate(source_lines, start_line):
             line_size = len(line)
 
@@ -108,6 +119,7 @@ class ASTCodeChunker:
                 save_whatever_lines_were_gathered_before()
                 for offset in range(0, line_size, self.max_chunk_size):
                     part = line[offset:offset + self.max_chunk_size]
+                    char_start = character_offset + offset
                     chunks.append(
                         Chunk(
                             id=str(uuid.uuid4()),
@@ -116,19 +128,25 @@ class ASTCodeChunker:
                             chunk_type='code',
                             start_line=line_number,
                             end_line=line_number,
+                            first_character_index=char_start,
+                            last_character_index=char_start + len(part) - 1,
                             metadata=metadata
                         )
                     )
+                character_offset += line_size
                 continue
 
             if line_size + curr_size > self.max_chunk_size:
                 save_whatever_lines_were_gathered_before()
             if not curr_lines:
                 curr_start = line_number
+                curr_char_start = character_offset
 
             curr_size += line_size
             curr_end = line_number
+            curr_char_end = character_offset + line_size - 1
             curr_lines.append(line)
+            character_offset += line_size
 
         save_whatever_lines_were_gathered_before()
         return chunks

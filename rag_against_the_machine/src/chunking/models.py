@@ -8,11 +8,10 @@ from pydantic import BaseModel
 class MarkdownChunk(BaseModel):
     """A chunk of Markdown linked to its original file."""
 
-    text: str
-    file_path: str
-    first_character_index: int
-    last_character_index: int
-
+    title: str
+    level: int
+    start_line: int
+    end_line: int
 
 class CodeChunk(BaseModel):
     """A chunk of Python code linked to its original file."""

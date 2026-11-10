@@ -1,6 +1,5 @@
 """  A module for chunking Markdown text into smaller, manageable pieces. """
 
-import json
 import re
 import uuid
 from pathlib import Path
@@ -36,11 +35,22 @@ def _find_boundaries(text: str, text_length: int) -> list[int]:
     return [0, *headings, text_length]
 
 
+def _heading_metadata(text: str, section_start: int) -> tuple[str, int]:
+    """Return the heading title and level for a Markdown section."""
+    match = re.search(
+        r"(?m)^(#{1,6})[ \t]+(.+?)\s*$",
+        text[section_start:],
+    )
+    if match is None or match.start() != 0:
+        return "", 0
+    return match.group(2), len(match.group(1))
+
+
 def _chunk_markdown_file(
     text: str,
     file_path: str,
     max_chunk_size: int = 2000,
-    ) -> list[MarkdownChunk]:
+    ) -> list[Chunk]:
     """Split Markdown into heading-aware chunks within the size limit.
 
     Args:
@@ -48,7 +58,7 @@ def _chunk_markdown_file(
         file_path (str): The path to the original Markdown file.
         max_chunk_size (int): The max number of characters per chunk.
     Returns:
-        list[MarkdownChunk]: list of MarkdownChunk objs represent's the chunks.
+        list[Chunk]: normalized Markdown chunks.
     """
 
     if not text:
@@ -56,9 +66,10 @@ def _chunk_markdown_file(
 
     text_length = len(text)
     boundaries = _find_boundaries(text, text_length)
-    markdown_chunks: list[MarkdownChunk] = []
+    markdown_chunks: list[Chunk] = []
 
     for section_start, section_end in zip(boundaries, boundaries[1:]):
+        title, level = _heading_metadata(text, section_start)
         start = section_start
 
         while start < section_end:
@@ -73,13 +84,23 @@ def _chunk_markdown_file(
             if end <= start:
                 end = limit
 
+            start_line = text.count("\n", 0, start) + 1
+            end_line = text.count("\n", 0, end - 1) + 1
             markdown_chunks.append(
-                MarkdownChunk(
-                    text=text[start:end],
+                Chunk(
+                    id=str(uuid.uuid4()),
+                    content=text[start:end],
                     file_path=file_path,
+                    chunk_type="markdown",
                     first_character_index=start,
                     last_character_index=end - 1,
-                )
+                    metadata=MarkdownChunk(
+                        title=title,
+                        level=level,
+                        start_line=start_line,
+                        end_line=end_line,
+                    ),
+                ),
             )
             start = end
 
@@ -97,7 +118,7 @@ def iter_markdown_corpus_chunks(
 
     walk_root = project_root / corpus_root
     try:
-        output_corpus_root = corpus_root.relative_to(project_root)
+        output_corpus_root = walk_root.relative_to(project_root)
     except ValueError:
         output_corpus_root = corpus_root
     try:
@@ -118,17 +139,9 @@ def iter_markdown_corpus_chunks(
             text = file_path.read_text(encoding="utf-8")
             relative_file_path = str(output_corpus_root / cur_dir / filename)
 
-            for markdown_chunk in _chunk_markdown_file(
+            for chunk in _chunk_markdown_file(
                 text=text,
                 file_path=relative_file_path,
                 max_chunk_size=max_chunk_size,
             ):
-                yield Chunk(
-                    id=str(uuid.uuid4()),
-                    content=markdown_chunk.text,
-                    file_path=markdown_chunk.file_path,
-                    chunk_type="markdown",
-                    first_character_index=markdown_chunk.first_character_index,
-                    last_character_index=markdown_chunk.last_character_index,
-                    metadata=markdown_chunk,
-                )
+                yield chunk

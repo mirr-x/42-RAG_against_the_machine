@@ -170,7 +170,15 @@ def chunk_markdown_corpus_with_rust(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     chunk_count = 0
 
-    walker = Walk(str(project_root / corpus_root), store=False)
+    walk_root = project_root / corpus_root
+    try:
+        walker = Walk(str(walk_root), store=False)
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to initialize Walk "
+            f"for corpus root '{walk_root}': "
+            f"{type(e).__name__}: {e}"
+        ) from e
 
     with open(output_path, 'w', encoding='utf-8') as output_file:
         for cur_dir, _, files in walker:

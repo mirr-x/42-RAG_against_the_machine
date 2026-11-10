@@ -25,7 +25,7 @@ class Chunking:
         self.output_path = output_path
         self.max_chunk_size = max_chunk_size
 
-    def run() -> None:
+    def run(self) -> None:
         """Run the chunking process for both Python and Markdown files."""
         try:
             code_chunk_count = chunk_python_corpus_with_rust(

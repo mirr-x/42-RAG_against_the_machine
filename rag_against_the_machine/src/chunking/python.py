@@ -308,36 +308,11 @@ class ASTCodeChunker:
         return chunks
 
 
-def chunk_python_corpus_with_rust(
-    project_root: Path,
-    corpus_root: Path,
-    output_path: Path,
-    max_chunk_size: int = 2000,
-) -> int:
-    """Chunk a corpus of Python files using Rust for traversal."""
-
-    if not 1 <= max_chunk_size <= 2000:
-        raise ValueError(
-            "max_chunk_size must be between 1 and 2000"
-        )
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    chunk_count = 0
-
-    with open(output_path, "w", encoding="utf-8") as output_file:
-        for chunk in iter_python_corpus_chunks(
-            project_root, corpus_root, max_chunk_size
-        ):
-            output_file.write(chunk.model_dump_json() + "\n")
-            chunk_count += 1
-    return chunk_count
-
-
 def iter_python_corpus_chunks(
     project_root: Path,
     corpus_root: Path,
     max_chunk_size: int = 2000,
-) -> Iterator[Chunk]:
+    ) -> Iterator[Chunk]:
     """Yield normalized Python chunks from a corpus."""
     if not 1 <= max_chunk_size <= 2000:
         raise ValueError(

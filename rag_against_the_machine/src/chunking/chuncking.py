@@ -16,7 +16,7 @@ class Chunking:
         corpus_code_root: Path,
         output_path: Path,
         max_chunk_size=1000
-    ) -> None:
+        ) -> None:
         self.project_root = project_root
         self.corpus_docs_root = corpus_docs_root
         self.corpus_code_root = corpus_code_root

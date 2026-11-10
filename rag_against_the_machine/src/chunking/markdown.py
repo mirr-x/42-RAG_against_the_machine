@@ -86,40 +86,6 @@ def _chunk_markdown_file(
     return markdown_chunks
 
 
-def chunk_markdown_corpus_with_rust(
-    project_root: Path,
-    corpus_root: Path,
-    output_path: Path,
-    max_chunk_size: int = 2000,
-    ) -> int:
-    """ Chunk a corpus of Markdown files using Rust for performance.
-
-    Args:
-        project_root (Path): The root directory of the project.
-        corpus_root (Path): root dir containing the md files to be chunked.
-        output_path (Path): path to the output file where chunks will be saved.
-        max_chunk_size (int, optional): The max number of characters per chunk.
-
-    Returns:
-        int: The number of chunks created.
-    """
-    if not 1 <= max_chunk_size <= 2000:
-        raise ValueError("max_chunk_size must be between 1 and 2000")
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    chunk_count = 0
-
-    with open(output_path, "w", encoding="utf-8") as output_file:
-        for chunk in iter_markdown_corpus_chunks(
-            project_root, corpus_root, max_chunk_size
-        ):
-            record = chunk.model_dump()
-            record["text"] = chunk.content
-            output_file.write(json.dumps(record) + "\n")
-            chunk_count += 1
-    return chunk_count
-
-
 def iter_markdown_corpus_chunks(
     project_root: Path,
     corpus_root: Path,

@@ -21,6 +21,8 @@ class CodeChunk(BaseModel):
     type: str
     signature: str
     parent_context: Optional[str] = None
+    start_line: Optional[int] = None
+    end_line: Optional[int] = None
 
 
 class Chunk(BaseModel):
@@ -30,8 +32,6 @@ class Chunk(BaseModel):
     content: str
     file_path: str
     chunk_type: str
-    start_line: int
-    end_line: int
     first_character_index: int
     last_character_index: int
     metadata: MarkdownChunk | CodeChunk

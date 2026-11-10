@@ -1,10 +1,12 @@
 """  A module for chunking Markdown text into smaller, manageable pieces. """
 
+import json
 import re
+import uuid
 from pathlib import Path
 from scandir_rs import Walk
 
-from src.chunking.models import MarkdownChunk
+from src.chunking.models import Chunk, MarkdownChunk
 
 
 HEADING_PATTERN = re.compile(r"(?m)^#{1,6}[ \t]+.*$")
@@ -38,7 +40,7 @@ def _chunk_markdown_file(
     text: str,
     file_path: str,
     max_chunk_size: int = 2000,
-) -> list[MarkdownChunk]:
+    ) -> list[MarkdownChunk]:
     """Split Markdown into heading-aware chunks within the size limit.
 
     Args:
@@ -84,71 +86,12 @@ def _chunk_markdown_file(
     return markdown_chunks
 
 
-# def recursive_split(
-#     text: str,
-#     separators: list[str],
-#     chunk_size: int,
-#     file_path: str = "",
-#     start_index: int = 0,
-# ) -> list[MarkdownChunk]:
-#     """Recursively split text into :class:`MarkdownChunk` objects."""
-#     if chunk_size < 1:
-#         raise ValueError("chunk_size must be at least 1")
-#     if not text:
-#         return []
-#     if len(text) <= chunk_size:
-#         return [MarkdownChunk(
-#             text=text,
-#             file_path=file_path,
-#             first_character_index=start_index,
-#             last_character_index=start_index + len(text) - 1,
-#         )]
-#     if not separators:
-#         return [MarkdownChunk(
-#             text=text[index:index + chunk_size],
-#             file_path=file_path,
-#             first_character_index=start_index + index,
-#             last_character_index=start_index + index + len(text[index:index + chunk_size]) - 1,
-#         ) for index in range(0, len(text), chunk_size)]
-
-#     separator = separators[0]
-#     remaining = separators[1:]
-#     chunks: list[MarkdownChunk] = []
-#     buffer = ""
-#     buffer_start = 0
-#     cursor = 0
-
-#     for split in text.split(separator):
-#         split_start = cursor
-#         cursor += len(split) + len(separator)
-#         candidate = buffer + (separator if buffer else "") + split
-#         if len(candidate) <= chunk_size:
-#             if not buffer:
-#                 buffer_start = split_start
-#             buffer = candidate
-#         else:
-#             if buffer:
-#                 chunks.extend(recursive_split(
-#                     buffer, remaining, chunk_size, file_path,
-#                     start_index + buffer_start,
-#                 ))
-#             buffer = split
-#             buffer_start = split_start
-
-#     if buffer:
-#         chunks.extend(recursive_split(
-#             buffer, remaining, chunk_size, file_path,
-#             start_index + buffer_start,
-#         ))
-#     return chunks
-
-
 def chunk_markdown_corpus_with_rust(
     project_root: Path,
     corpus_root: Path,
     output_path: Path,
-    max_chunk_size: int = 2000
-) -> int:
+    max_chunk_size: int = 2000,
+    ) -> int:
     """ Chunk a corpus of Markdown files using Rust for performance.
 
     Args:
@@ -160,17 +103,37 @@ def chunk_markdown_corpus_with_rust(
     Returns:
         int: The number of chunks created.
     """
-    # if output_path.exists():
-    #     print(f"'{output_path}' already exists. Skipping chunking step.")
-    #     return 0
-
     if not 1 <= max_chunk_size <= 2000:
         raise ValueError("max_chunk_size must be between 1 and 2000")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     chunk_count = 0
 
+    with open(output_path, "w", encoding="utf-8") as output_file:
+        for chunk in iter_markdown_corpus_chunks(
+            project_root, corpus_root, max_chunk_size
+        ):
+            record = chunk.model_dump()
+            record["text"] = chunk.content
+            output_file.write(json.dumps(record) + "\n")
+            chunk_count += 1
+    return chunk_count
+
+
+def iter_markdown_corpus_chunks(
+    project_root: Path,
+    corpus_root: Path,
+    max_chunk_size: int = 2000,
+    ):
+    """Yield normalized Markdown chunks from a corpus."""
+    if not 1 <= max_chunk_size <= 2000:
+        raise ValueError("max_chunk_size must be between 1 and 2000")
+
     walk_root = project_root / corpus_root
+    try:
+        output_corpus_root = corpus_root.relative_to(project_root)
+    except ValueError:
+        output_corpus_root = corpus_root
     try:
         walker = Walk(str(walk_root), store=False)
     except Exception as e:
@@ -180,19 +143,26 @@ def chunk_markdown_corpus_with_rust(
             f"{type(e).__name__}: {e}"
         ) from e
 
-    with open(output_path, 'w', encoding='utf-8') as output_file:
-        for cur_dir, _, files in walker:
-            for filename in sorted(files):
-                if filename.lower().endswith('.md'):
-                    file_path = project_root / corpus_root / cur_dir / filename
+    for cur_dir, _, files in walker:
+        for filename in sorted(files):
+            if not filename.lower().endswith(".md"):
+                continue
 
-                    text = file_path.read_text(encoding='utf-8')
-                    chunks = _chunk_markdown_file(
-                        text=text,
-                        file_path=str(corpus_root / cur_dir / filename),
-                        max_chunk_size=max_chunk_size
-                    )
-                    for chunk in chunks:
-                        output_file.write(chunk.model_dump_json() + '\n')
-                        chunk_count += 1
-    return chunk_count
+            file_path = project_root / corpus_root / cur_dir / filename
+            text = file_path.read_text(encoding="utf-8")
+            relative_file_path = str(output_corpus_root / cur_dir / filename)
+
+            for markdown_chunk in _chunk_markdown_file(
+                text=text,
+                file_path=relative_file_path,
+                max_chunk_size=max_chunk_size,
+            ):
+                yield Chunk(
+                    id=str(uuid.uuid4()),
+                    content=markdown_chunk.text,
+                    file_path=markdown_chunk.file_path,
+                    chunk_type="markdown",
+                    first_character_index=markdown_chunk.first_character_index,
+                    last_character_index=markdown_chunk.last_character_index,
+                    metadata=markdown_chunk,
+                )

@@ -92,17 +92,19 @@ class ASTCodeChunker:
 
             if not curr_lines:
                 return
+            chunk_metadata = metadata.model_copy(update={
+                "start_line": curr_start,
+                "end_line": curr_end,
+            })
             chunks.append(
                 Chunk(
                     id=str(uuid.uuid4()),
                     content=''.join(curr_lines),
                     file_path=self.file_path,
                     chunk_type='code',
-                    start_line=curr_start,
-                    end_line=curr_end,
                     first_character_index=curr_char_start,
                     last_character_index=curr_char_end,
-                    metadata=metadata
+                    metadata=chunk_metadata
                 )
             )
             curr_lines.clear()
@@ -120,17 +122,19 @@ class ASTCodeChunker:
                 for offset in range(0, line_size, self.max_chunk_size):
                     part = line[offset:offset + self.max_chunk_size]
                     char_start = character_offset + offset
+                    chunk_metadata = metadata.model_copy(update={
+                        "start_line": line_number,
+                        "end_line": line_number,
+                    })
                     chunks.append(
                         Chunk(
                             id=str(uuid.uuid4()),
                             content=part,
                             file_path=self.file_path,
                             chunk_type='code',
-                            start_line=line_number,
-                            end_line=line_number,
                             first_character_index=char_start,
                             last_character_index=char_start + len(part) - 1,
-                            metadata=metadata
+                            metadata=chunk_metadata
                         )
                     )
                 character_offset += line_size
@@ -320,7 +324,31 @@ def chunk_python_corpus_with_rust(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     chunk_count = 0
 
+    with open(output_path, "w", encoding="utf-8") as output_file:
+        for chunk in iter_python_corpus_chunks(
+            project_root, corpus_root, max_chunk_size
+        ):
+            output_file.write(chunk.model_dump_json() + "\n")
+            chunk_count += 1
+    return chunk_count
+
+
+def iter_python_corpus_chunks(
+    project_root: Path,
+    corpus_root: Path,
+    max_chunk_size: int = 2000,
+) -> Iterator[Chunk]:
+    """Yield normalized Python chunks from a corpus."""
+    if not 1 <= max_chunk_size <= 2000:
+        raise ValueError(
+            "max_chunk_size must be between 1 and 2000"
+        )
+
     walk_root = project_root / corpus_root
+    try:
+        output_corpus_root = corpus_root.relative_to(project_root)
+    except ValueError:
+        output_corpus_root = corpus_root
     try:
         walker = Walk(str(walk_root), store=False)
     except Exception as e:
@@ -330,22 +358,18 @@ def chunk_python_corpus_with_rust(
             f"{type(e).__name__}: {e}"
         ) from e
 
-    with open(output_path, "w", encoding="utf-8") as output_file:
-        for root, _, files in walker:
-            for filename in sorted(files):
+    for root, _, files in walker:
+        for filename in sorted(files):
+            if not filename.lower().endswith(".py"):
+                continue
 
-                if not filename.lower().endswith(".py"):
-                    continue
+            source_path = walk_root / root / filename
+            relative_file_path = output_corpus_root / root / filename
+            chunker = ASTCodeChunker(
+                file_path=source_path,
+                max_chunk_size=max_chunk_size,
+            )
 
-                file_path = corpus_root / root / filename
-
-                chunker = ASTCodeChunker(
-                    file_path=file_path,
-                    max_chunk_size=max_chunk_size,
-                )
-
-                for chunk in chunker.chunks_python_file():
-                    output_file.write(chunk.model_dump_json() + "\n")
-                    chunk_count += 1
-
-    return chunk_count
+            for chunk in chunker.chunks_python_file():
+                chunk.file_path = str(relative_file_path)
+                yield chunk

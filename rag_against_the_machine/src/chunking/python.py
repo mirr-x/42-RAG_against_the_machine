@@ -284,7 +284,11 @@ class ASTCodeChunker:
         try:
             tree = ast.parse(self.source_code)
         except SyntaxError as error:
-            print(f"Skipping file {self.file_path} due to SyntaxError: {error}")
+            print(
+                f"Warning: skipped Python file '{self.file_path}' because "
+                f"of a syntax error at line {error.lineno}, "
+                f"column {error.offset}: {error.msg}"
+            )
             return []
 
         chunks: list[Chunk] = []
@@ -320,6 +324,15 @@ def iter_python_corpus_chunks(
         )
 
     walk_root = project_root / corpus_root
+    if not walk_root.exists():
+        raise FileNotFoundError(
+            f"Python corpus directory does not exist: '{walk_root}'. "
+            "Check corpus_code_root."
+        )
+    if not walk_root.is_dir():
+        raise NotADirectoryError(
+            f"Python corpus path is not a directory: '{walk_root}'."
+        )
     try:
         output_corpus_root = corpus_root.relative_to(project_root)
     except ValueError:
@@ -340,11 +353,16 @@ def iter_python_corpus_chunks(
 
             source_path = walk_root / root / filename
             relative_file_path = output_corpus_root / root / filename
-            chunker = ASTCodeChunker(
-                file_path=source_path,
-                max_chunk_size=max_chunk_size,
-            )
-
-            for chunk in chunker.chunks_python_file():
-                chunk.file_path = str(relative_file_path)
-                yield chunk
+            try:
+                chunker = ASTCodeChunker(
+                    file_path=source_path,
+                    max_chunk_size=max_chunk_size,
+                )
+                for chunk in chunker.chunks_python_file():
+                    chunk.file_path = str(relative_file_path)
+                    yield chunk
+            except (OSError, UnicodeError) as error:
+                print(
+                    f"Warning: skipped Python file '{source_path}': "
+                    f"{type(error).__name__}: {error}"
+                )

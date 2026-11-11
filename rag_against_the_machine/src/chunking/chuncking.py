@@ -54,7 +54,10 @@ class Chunking:
             print(f"Code chunks written: {code_chunk_count}")
             print(f"Markdown chunks written: {markdown_chunk_count}")
 
-        except ValueError as e:
-            raise ValueError(f"Error during chunking: {e}")
+        except (OSError, UnicodeError, RuntimeError, ValueError) as error:
+            raise RuntimeError(
+                f"Chunking failed while writing '{self.output_path}': "
+                f"{type(error).__name__}: {error}"
+            ) from error
         
         

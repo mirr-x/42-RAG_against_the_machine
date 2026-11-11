@@ -1,5 +1,6 @@
 """ __main__ entry file """
 
+import traceback
 from pathlib import Path
 
 from src.chunking.chuncking import Chunking
@@ -21,6 +22,7 @@ if __name__ == '__main__':
         )
         chunking.run()
     except ValueError as e:
-        print(f"Error: {e}")
+        print(f"Configuration error: {e}")
     except Exception as e:
-        print(f"Unexpected error: {e} from {e.__traceback__.tb_frame.f_code.co_filename} at line {e.__traceback__.tb_lineno}")
+        print(f"Chunking failed: {type(e).__name__}: {e}")
+        traceback.print_exc()

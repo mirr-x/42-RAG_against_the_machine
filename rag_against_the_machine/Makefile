@@ -5,12 +5,13 @@ uv:
 install: uv
 	@~/.local/bin/uv sync
 
-run:
-	uv run python -m src
+run-index:
+	uv run python -m src index --max_chunk_size 2000
 	
 
 clean:
 	find . -name '__pycache__' -exec rm -rf {} +
+	find . -name '.pytest_cache' -exec rm -rf {} +
 
 
 .PHONY: uv, install, clean

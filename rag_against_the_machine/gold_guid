@@ -1,0 +1,203 @@
+user: focus only on phase4 creat plan for it to finish it based on my code 
+
+copilot: -> look down
+
+# Phase 4 plan: Retrieval and Search
+
+Current code already provides:
+
+- BM25 index persistence in `indexing.py`
+- Stored `Chunk` records with content, path, and offsets in `models.py`
+- Python Fire CLI with only `index` in `cli.py`
+
+## Step 1: Define search-result models
+
+Create a models module containing:
+
+- `MinimalSource`
+- `UnansweredQuestion`
+- `AnsweredQuestion`
+- `MinimalSearchResults`
+- `StudentSearchResults`
+
+Use the required fields:
+
+```text
+MinimalSource:
+  file_path
+  first_character_index
+  last_character_index
+
+MinimalSearchResults:
+  question_id
+  question
+  retrieved_sources
+
+StudentSearchResults:
+  search_results
+  k
+```
+
+The existing `Chunk` model remains internal to indexing and retrieval.
+
+## Step 2: Create a retriever service
+
+Create a retrieval module with one main responsibility:
+
+```text
+query(question, k) -> list[Chunk]
+```
+
+It should:
+
+1. Load `bm25.pkl`.
+2. Read the stored BM25 object and chunk list.
+3. Apply the same tokenizer used by `Indexer`.
+4. Calculate BM25 scores.
+5. Select the top `k` chunks.
+6. Return results in descending score order.
+
+Important design choice: move the tokenizer into a shared helper so indexing and retrieval cannot use different tokenization rules.
+
+## Step 3: Validate query inputs
+
+The retriever must handle:
+
+- Empty or whitespace-only question
+- `k <= 0`
+- `k` larger than the number of indexed chunks
+- Missing `bm25.pkl`
+- Corrupt or incompatible pickle data
+- Queries containing only stop words
+- Queries with identifiers such as `openai_api_server`
+
+Do not silently return fake results. Raise clear application errors that the CLI can display.
+
+## Step 4: Convert chunks to sources
+
+The retriever should convert each selected `Chunk` into `MinimalSource`.
+
+Use the existing values directly:
+
+```text
+file_path = chunk.file_path
+first_character_index = chunk.first_character_index
+last_character_index = chunk.last_character_index
+```
+
+Do not expose chunk content in the search output.
+
+Before returning results, verify:
+
+- `last_character_index >= first_character_index`
+- Chunk width is no more than 2,000 characters
+- Paths remain relative and match the indexed corpus path
+
+## Step 5: Add the `search` CLI command
+
+Add a method to `cli.py`:
+
+```bash
+uv run python -m src search --query "How does vLLM serve OpenAI requests?" --k 5
+```
+
+It should:
+
+1. Validate the query and `k`.
+2. Search the persisted index.
+3. Generate a question ID.
+4. Build `MinimalSearchResults`.
+5. Print valid JSON only.
+
+The command should not rebuild the index.
+
+## Step 6: Add the `search_dataset` CLI command
+
+Expected usage:
+
+```bash
+uv run python -m src search_dataset \
+  --dataset_path data/datasets/UnansweredQuestions/dataset_docs_public.json \
+  --k 10 \
+  --save_directory data/output/search_results/UnansweredQuestions
+```
+
+Processing flow:
+
+1. Validate `dataset_path`.
+2. Load JSON.
+3. Validate it as `RagDataset`.
+4. Process every question.
+5. Preserve existing `question_id`s.
+6. Retrieve the top `k` sources per question.
+7. Display a `tqdm` progress bar.
+8. Build `StudentSearchResults`.
+9. Create `save_directory`.
+10. Save the output using the same input filename.
+
+Expected output shape:
+
+```json
+{
+  "search_results": [
+    {
+      "question_id": "...",
+      "question": "...",
+      "retrieved_sources": []
+    }
+  ],
+  "k": 10
+}
+```
+
+## Step 7: Decide dataset compatibility
+
+The input dataset may contain either:
+
+- `UnansweredQuestion`
+- `AnsweredQuestion`
+
+For `search_dataset`, only `question_id` and `question` are required. Existing reference `sources` and `answer` fields must not be copied into the search output.
+
+## Step 8: Add focused tests
+
+Test the retriever with a small temporary index:
+
+- Correct ranking for a matching query
+- Correct `k` limit
+- `k` larger than available chunks
+- Empty query
+- Invalid `k`
+- Missing index
+- Correct source offsets
+- Correct JSON output
+- Dataset output preserves question IDs
+- Dataset output is saved to the requested directory
+
+## Phase 4 completion criteria
+
+Phase 4 is complete only when all of these work:
+
+```bash
+uv run python -m src index --max_chunk_size 2000
+
+uv run python -m src search \
+  --query "How does the OpenAI server work?" \
+  --k 5
+
+uv run python -m src search_dataset \
+  --dataset_path path/to/dataset.json \
+  --k 10 \
+  --save_directory path/to/output
+```
+
+And the following are true:
+
+- Search loads the persisted index.
+- Search does not re-index.
+- Results use valid Pydantic models.
+- Paths and character ranges are preserved.
+- Output JSON matches the required schema.
+- Invalid inputs do not produce unhandled tracebacks.
+- Dataset search shows progress.
+- Tests pass for retrieval and dataset search.

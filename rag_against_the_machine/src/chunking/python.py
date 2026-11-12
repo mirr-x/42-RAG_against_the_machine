@@ -79,7 +79,7 @@ class ASTCodeChunker:
         """ Split code into chunks without exceeding the size limit """
 
         chunks: list[Chunk] = []
-        curr_lines = []
+        curr_lines: list[str] = []
         curr_size = 0
         curr_start = start_line
         curr_end = start_line
@@ -87,8 +87,8 @@ class ASTCodeChunker:
         curr_char_start = content_start
         curr_char_end = content_start - 1
 
-        def save_whatever_lines_were_gathered_before():
-            nonlocal curr_lines, curr_size
+        def save_whatever_lines_were_gathered_before() -> None:
+            nonlocal curr_size
 
             if not curr_lines:
                 return
@@ -198,8 +198,7 @@ class ASTCodeChunker:
         header_end = first_body_line - 1
         class_nodes: list[ast.stmt] = []
 
-        def flush_class_nodes():
-            nonlocal class_nodes
+        def flush_class_nodes() -> None:
             if class_nodes:
                 start = class_nodes[0].lineno
                 end = class_nodes[-1].end_lineno or class_nodes[-1].lineno
@@ -214,8 +213,11 @@ class ASTCodeChunker:
 
         # 2. Ignore non-definition class body statements (docstrings, fields)
         for child in node.body:
-            if any(isinstance(descendant, DefinitionTypes) for descendant in ast.walk(child)):
-                flush_class_nodes()  # Flush pending attributes/docstrings before a method
+            if any(
+                isinstance(descendant, DefinitionTypes)
+                for descendant in ast.walk(child)
+            ):
+                flush_class_nodes()  # Flush pending attributes/docstrings
                 continue
             class_nodes.append(child)
 
@@ -294,8 +296,7 @@ class ASTCodeChunker:
         chunks: list[Chunk] = []
         module_nodes: list[ast.stmt] = []
 
-        def flush_module_nodes():
-            nonlocal module_nodes
+        def flush_module_nodes() -> None:
             if module_nodes:
                 chunks.extend(self._create_module_chunks(module_nodes))
                 module_nodes.clear()
@@ -306,9 +307,7 @@ class ASTCodeChunker:
                 chunks.extend(self._generate_chunks_for_node(node))
             else:
                 module_nodes.append(node)
-                
         flush_module_nodes()
-        
         return chunks
 
 
@@ -316,7 +315,7 @@ def iter_python_corpus_chunks(
     project_root: Path,
     corpus_root: Path,
     max_chunk_size: int = 2000,
-    ) -> Iterator[Chunk]:
+        ) -> Iterator[Chunk]:
     """Yield normalized Python chunks from a corpus."""
     if not 1 <= max_chunk_size <= 2000:
         raise ValueError(

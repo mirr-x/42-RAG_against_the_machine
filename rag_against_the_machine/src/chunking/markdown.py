@@ -1,8 +1,10 @@
 """  A module for chunking Markdown text into smaller, manageable pieces. """
+# pylint: disable=no-name-in-module
 
 import re
 import uuid
 from pathlib import Path
+from typing import Iterator
 from scandir_rs import Walk
 
 from src.chunking.models import Chunk, MarkdownChunk
@@ -50,7 +52,7 @@ def _chunk_markdown_file(
     text: str,
     file_path: str,
     max_chunk_size: int = 2000,
-    ) -> list[Chunk]:
+        ) -> list[Chunk]:
     """Split Markdown into heading-aware chunks within the size limit.
 
     Args:
@@ -111,7 +113,7 @@ def iter_markdown_corpus_chunks(
     project_root: Path,
     corpus_root: Path,
     max_chunk_size: int = 2000,
-    ):
+        ) -> Iterator[Chunk]:
     """Yield normalized Markdown chunks from a corpus."""
     if not 1 <= max_chunk_size <= 2000:
         raise ValueError("max_chunk_size must be between 1 and 2000")

@@ -11,9 +11,7 @@ from src.cli.cli import CLI
 if __name__ == '__main__':
 
     try:
-        print("--- Starting CLI ---")
         fire.Fire(CLI)
-        print("--- CLI finished ---")
     except ValueError as e:
         print(f"Configuration error: {e}")
     except Exception as e:

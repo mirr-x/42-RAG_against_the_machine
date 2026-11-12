@@ -12,7 +12,7 @@ from src.indexing.indexing import Indexer
 
 class CLI:
     """ CLI for the RAG system """
-    def index(self, max_chunk_size: int = 2000):
+    def index(self, max_chunk_size: int = 2000) -> None:
         """ Index the documentation and code corpus """
 
         Indexer(

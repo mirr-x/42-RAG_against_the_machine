@@ -13,6 +13,7 @@ class MarkdownChunk(BaseModel):
     start_line: int
     end_line: int
 
+
 class CodeChunk(BaseModel):
     """A chunk of Python code linked to its original file."""
 

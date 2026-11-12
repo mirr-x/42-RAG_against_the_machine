@@ -2,8 +2,10 @@
 
 import re
 import pickle
-from pathlib import Path
+
 from rank_bm25 import BM25Okapi
+from pathlib import Path
+from tqdm import tqdm
 
 from src.chunking.chuncking import Chunking
 from src.chunking.models import Chunk
@@ -73,8 +75,12 @@ class Indexer:
 
     def _build_bm25(self, chunks: list[Chunk]) -> dict[str, object]:
         """Build a ready-to-search BM25 index with ``rank-bm25``."""
+        print('')
         tokenized_documents = [
-            self._tokenize(chunk.content) for chunk in chunks
+            self._tokenize(chunk.content)
+            for chunk in tqdm(
+                chunks, desc="Tokenizing chunks", unit=" chunk", ascii="-#"
+            )
         ]
         bm25 = BM25Okapi(tokenized_documents)
         return {
@@ -94,7 +100,7 @@ class Indexer:
         chunks: list[Chunk] = []
         try:
             with self.chunks_file.open(encoding="utf-8") as chunks_file:
-                for line_number, json_record in enumerate(chunks_file, start=1):
+                for line_num, json_record in enumerate(chunks_file, start=1):
                     if not json_record.strip():
                         continue
                     try:
@@ -103,7 +109,7 @@ class Indexer:
                         )
                     except ValueError as error:
                         raise ValueError(
-                            f"Invalid chunk at line {line_number} in "
+                            f"Invalid chunk at line {line_num} in "
                             f"'{self.chunks_file}': {error}"
                         ) from error
         except OSError as error:
@@ -131,6 +137,8 @@ class Indexer:
         with self.index_file.open('wb') as index_file:
             pickle.dump(index, index_file, protocol=pickle.HIGHEST_PROTOCOL)
 
-        print(f"BM25 index written: {self.index_file}")
-        print(f"Indexed chunks: {len(chunks)}")
+        print(
+            f"Ingestion completed. Indexed {len(chunks)} chunks under "
+            f"'{self.index_file}'."
+        )
         return len(chunks)

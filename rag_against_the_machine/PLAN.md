@@ -5,7 +5,7 @@
 
 - [x] **Phase 2 - Ingestion and Chunking:** Read files, split code and documentation, and preserve character offsets.
 - [x] **Phase 3 - Indexing and Persistence:** Implement BM25 or TF-IDF and save the searchable index.
-- [-] **Phase 4 - Retrieval and Search:** Implement ranking and the `search` and `search_dataset` commands.
+- [x] **Phase 4 - Retrieval and Search:** Implement ranking and the `search` and `search_dataset` commands.
 - [ ] **Phase 5 - Answer Generation:** Integrate Qwen3-0.6B to generate evidence-based answers.
 - [ ] **Phase 6 - Evaluation and Optimization:** Measure Recall@5 and improve retrieval performance.
 - [ ] **Phase 7 - Testing and Robustness:** Handle edge cases and validate commands, Makefile, and static checks.

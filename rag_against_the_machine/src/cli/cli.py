@@ -8,6 +8,7 @@ from src.config import (
     ROOT,
 )
 from src.indexing.indexing import Indexer
+from src.retrieval.retrieval import Retriever
 
 
 class CLI:
@@ -23,3 +24,7 @@ class CLI:
             index_file=INDEX_FILE,
             max_chunk_size=max_chunk_size
         ).build()
+
+    def search(self, query: str, k: int = 5):
+        """ Search the index for the given query """
+        pass  # TODO: Implement search functionality

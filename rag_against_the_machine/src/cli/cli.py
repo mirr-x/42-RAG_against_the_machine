@@ -27,4 +27,4 @@ class CLI:
 
     def search(self, query: str, k: int = 5):
         """ Search the index for the given query """
-        pass  # TODO: Implement search functionality
+        Retriever(index_file=INDEX_FILE).query(query, k)

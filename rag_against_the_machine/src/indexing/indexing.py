@@ -58,7 +58,7 @@ class Indexer:
         self.max_chunk_size = max_chunk_size
 
     @staticmethod
-    def _tokenize(text: str) -> list[str]:
+    def tokenize(text: str) -> list[str]:
         """Tokenize content by keep related words and discard useless words"""
         tokens: list[str] = []
 
@@ -77,7 +77,7 @@ class Indexer:
         """Build a ready-to-search BM25 index with ``rank-bm25``."""
         print('')
         tokenized_documents = [
-            self._tokenize(chunk.content)
+            self.tokenize(chunk.content)
             for chunk in tqdm(
                 chunks, desc="Tokenizing chunks", unit=" chunk", ascii="-#"
             )

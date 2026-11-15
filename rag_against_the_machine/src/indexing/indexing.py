@@ -8,7 +8,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from src.chunking.chuncking import Chunking
-from src.chunking.models import Chunk
+from src.models import Chunk
 
 TOKEN_PATTERN = re.compile(r'[A-Za-z0-9_]+')
 

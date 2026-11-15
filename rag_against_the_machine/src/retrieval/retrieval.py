@@ -2,10 +2,12 @@
 
 from pathlib import Path
 import pickle
+from typing import List
 import numpy as np
 from rank_bm25 import BM25Okapi
 
 from src.indexing.indexing import Indexer
+from src.models import MinimalSource
 
 
 class Retriever:
@@ -14,7 +16,7 @@ class Retriever:
     def __init__(self, index_file: Path) -> None:
         self.index_file = index_file
 
-    def query(self, query: str, k: int = 5) -> None:
+    def query(self, query: str, k: int = 5) -> List[MinimalSource]:
         """Retrieve the top-k results for the given query."""
         if not self.index_file.exists():
             raise FileNotFoundError("Index file not found.")
@@ -37,7 +39,10 @@ class Retriever:
         # Apply the same tokenizer used by Indexer.
         tokenized_query = Indexer.tokenize(query)
         if not tokenized_query:
-            raise ValueError("Query string must contain at least one valid token after tokenization.")
+            raise ValueError(
+                "Query string must contain at least one valid token "
+                "after tokenization."
+            )
 
         # Calculate BM25 scores.
         scores = bm25_index.get_scores(tokenized_query)
@@ -49,8 +54,27 @@ class Retriever:
             key=lambda i: scores[i],
             reverse=True,
         )
-        # TODO: Return the top k results as models instead of printing them.
-        print(scores)
-        print('*' * 9)
-        print(scores[top_k_sorted])
-        print(top_k_sorted)
+
+        # Return the top k results as models instead of printing them.
+        top_k_results = []
+        for i in top_k_sorted:
+            chunk = bm25_file['chunks'][i]
+            if chunk.last_character_index < chunk.first_character_index:
+                raise ValueError(
+                    "Chunk end index cannot precede its start index.")
+            if (
+                chunk.last_character_index - chunk.first_character_index + 1
+                > 2000
+            ):
+                raise ValueError("Chunk width cannot exceed 2,000 characters.")
+
+            top_k_results.append(MinimalSource(
+                file_path=chunk.file_path,
+                first_character_index=chunk.first_character_index,
+                last_character_index=chunk.last_character_index
+            ))
+            print(
+                f"Score: {scores[i]:.4f}, Chunk ID: {chunk.id}, "
+                f"File Path: {chunk.file_path}"
+            )
+        return top_k_results

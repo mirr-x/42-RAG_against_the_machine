@@ -25,6 +25,6 @@ class CLI:
             max_chunk_size=max_chunk_size
         ).build()
 
-    def search(self, query: str, k: int = 5):
+    def search(self, query: str, k: int = 5) -> None:
         """ Search the index for the given query """
-        Retriever(index_file=INDEX_FILE).query(query, k)
+        print(Retriever(index_file=INDEX_FILE).query(query, k))

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterator
 from scandir_rs import Walk
 
-from src.chunking.models import Chunk, MarkdownChunk
+from src.models import Chunk, MarkdownChunk
 
 
 HEADING_PATTERN = re.compile(r"(?m)^#{1,6}[ \t]+.*$")

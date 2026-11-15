@@ -9,7 +9,7 @@ from typing import Iterator
 
 from scandir_rs import Walk
 
-from src.chunking.models import Chunk, CodeChunk
+from src.models import Chunk, CodeChunk
 
 
 DEFINITION_NODE = ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef

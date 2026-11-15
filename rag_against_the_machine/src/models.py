@@ -1,8 +1,9 @@
 """Pydantic models used by code and Markdown chunkers."""
 
-from typing import Optional
+from typing import Optional, List
+import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MarkdownChunk(BaseModel):
@@ -44,3 +45,14 @@ class MinimalSource(BaseModel):
     last_character_index: int
 
 
+class MinimalSearchResults(BaseModel):
+    """A minimal representation of question search results."""
+    question_id: str
+    question: str
+    retrieved_sources: List[MinimalSource]
+
+
+class StudentSearchResults(BaseModel):
+    """A representation of a search results."""
+    search_results: List[MinimalSearchResults]
+    k: int

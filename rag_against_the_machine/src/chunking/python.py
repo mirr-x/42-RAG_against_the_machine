@@ -12,8 +12,8 @@ from scandir_rs import Walk
 from src.chunking.models import Chunk, CodeChunk
 
 
-DefinitionNode = ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
-DefinitionTypes = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+DEFINITION_NODE = ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
+DEFINITION_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
 
 
 class ASTCodeChunker:
@@ -36,7 +36,7 @@ class ASTCodeChunker:
             character_offset += len(line)
 
     @staticmethod
-    def _definition_start_line(node: DefinitionNode) -> int:
+    def _definition_start_line(node: DEFINITION_NODE) -> int:
         """Return the first decorator line, or the definition line."""
         if node.decorator_list:
             return node.decorator_list[0].lineno
@@ -51,13 +51,15 @@ class ASTCodeChunker:
         return f"{parent_context} > {curr_context}"
 
     @staticmethod
-    def _travers_nested_definitions(node: ast.AST) -> Iterator[DefinitionNode]:
+    def _travers_nested_definitions(
+        node: ast.AST
+            ) -> Iterator[DEFINITION_NODE]:
         """ Iterate over nested definitions within a node. """
         for child in ast.walk(node):
-            if child is not node and isinstance(child, DefinitionTypes):
+            if child is not node and isinstance(child, DEFINITION_TYPES):
                 yield child
 
-    def _extract_signature(self, node: DefinitionNode) -> str:
+    def _extract_signature(self, node: DEFINITION_NODE) -> str:
         """Extract decorators and the definition header."""
         start_line = self._definition_start_line(node)
         first_body_line = node.body[0].lineno
@@ -214,7 +216,7 @@ class ASTCodeChunker:
         # 2. Ignore non-definition class body statements (docstrings, fields)
         for child in node.body:
             if any(
-                isinstance(descendant, DefinitionTypes)
+                isinstance(descendant, DEFINITION_TYPES)
                 for descendant in ast.walk(child)
             ):
                 flush_class_nodes()  # Flush pending attributes/docstrings
@@ -302,7 +304,7 @@ class ASTCodeChunker:
                 module_nodes.clear()
 
         for node in tree.body:
-            if isinstance(node, DefinitionTypes):
+            if isinstance(node, DEFINITION_TYPES):
                 flush_module_nodes()
                 chunks.extend(self._generate_chunks_for_node(node))
             else:

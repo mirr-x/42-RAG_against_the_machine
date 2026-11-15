@@ -1,13 +1,15 @@
 """Retrieval and search functionality for the RAG system."""
 
 from pathlib import Path
-import pickle
 from typing import List
+
+import json
+import pickle
 import numpy as np
 from rank_bm25 import BM25Okapi
 
+from src.models import MinimalSource, StudentSearchResults, MinimalSearchResults
 from src.indexing.indexing import Indexer
-from src.models import MinimalSource
 
 
 class Retriever:
@@ -29,7 +31,7 @@ class Retriever:
         with open(self.index_file, 'rb') as index_file:
             try:
                 bm25_file = pickle.load(index_file)
-            except Exception as e:
+            except (Exception) as e:
                 raise ValueError(f"Error loading index file: {e}") from e
 
         bm25_index: BM25Okapi = bm25_file['bm25']
@@ -73,8 +75,35 @@ class Retriever:
                 first_character_index=chunk.first_character_index,
                 last_character_index=chunk.last_character_index
             ))
-            print(
-                f"Score: {scores[i]:.4f}, Chunk ID: {chunk.id}, "
-                f"File Path: {chunk.file_path}"
-            )
         return top_k_results
+
+    def query_batch(
+        self,
+        dataset_path: Path,
+        saved_directory: Path,
+        k: int = 5
+    ) -> Path:
+        """Retrieve the top-k results for each question in a dataset."""
+        if not dataset_path.exists():
+            raise FileNotFoundError("Dataset file not found.")
+        if k <= 0:
+            raise ValueError("k must be a positive integer.")
+
+        # Load the dataset
+        try:
+            with dataset_path.open('r', encoding='utf-8') as f:
+                rag_questions = json.load(f)['rag_questions']
+        except (json.JSONDecodeError, Exception) as e:
+            raise ValueError(f"Error loading dataset file: {e}") from e
+
+        try:
+            saved_directory.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            raise ValueError(f"Error creating saved directory: {e}") from e
+
+        # try:
+        #     result_path = saved_directory / dataset_path.name
+            # with result_path.open('w', encoding='utf-8') as f:
+        results: list[StudentSearchResults] = []
+        for question in rag_questions:
+            

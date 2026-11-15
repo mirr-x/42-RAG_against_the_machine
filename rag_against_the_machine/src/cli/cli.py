@@ -1,5 +1,7 @@
 """ CLI for the RAG system """
 
+from pathlib import Path
+
 from src.config import (
     CHUNKS_FILE,
     CORPUS_CODE_ROOT,
@@ -27,4 +29,26 @@ class CLI:
 
     def search(self, query: str, k: int = 5) -> None:
         """ Search the index for the given query """
-        print(Retriever(index_file=INDEX_FILE).query(query, k))
+        results = Retriever(index_file=INDEX_FILE).query(query, k)
+        for result in results:
+            print(
+                f'{result.file_path} '
+                f'[{result.first_character_index}:'
+                f'{result.last_character_index}]'
+            )
+
+    def search_dataset(
+        self,
+        dataset_path: str,
+        saved_directory: str,
+        k: int = 5,
+    ) -> None:
+        """ Answer questions from a dataset and save the results to a file """
+        dataset_path: Path = Path(dataset_path)
+        saved_directory: Path = Path(saved_directory)
+
+        Retriever(index_file=INDEX_FILE).query_batch(
+            dataset_path=dataset_path,
+            saved_directory=saved_directory,
+            k=k
+        )

@@ -56,3 +56,20 @@ class StudentSearchResults(BaseModel):
     """A representation of a search results."""
     search_results: List[MinimalSearchResults]
     k: int
+
+
+class UnansweredQuestion(BaseModel):
+    """A question without a generated answer."""
+    question_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    question: str
+
+
+class AnsweredQuestion(UnansweredQuestion):
+    """A question with a generated answer and its sources."""
+    sources: list[MinimalSource]
+    answer: str
+
+
+class RagDataset(BaseModel):
+    """A dataset containing answered and unanswered questions."""
+    rag_questions: list[AnsweredQuestion | UnansweredQuestion]

@@ -47,8 +47,10 @@ class CLI:
         dataset_path: Path = Path(dataset_path)
         save_directory: Path = Path(save_directory)
 
-        Retriever(index_file=INDEX_FILE).query_batch(
-            dataset_path=dataset_path,
-            save_directory=save_directory,
-            k=k
-        )
+        print(
+            'Saved student_search_results to ',
+            Retriever(index_file=INDEX_FILE).query_batch(
+                dataset_path=dataset_path,
+                save_directory=save_directory,
+                k=k
+        ))

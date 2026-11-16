@@ -6,7 +6,9 @@ from typing import List
 import json
 import pickle
 import numpy as np
+from pydantic import ValidationError
 from rank_bm25 import BM25Okapi
+from tqdm import tqdm
 
 from src.models import (
     MinimalSource,
@@ -36,8 +38,16 @@ class Retriever:
         with open(self.index_file, 'rb') as index_file:
             try:
                 bm25_file = pickle.load(index_file)
-            except (Exception) as e:
-                raise ValueError(f"Error loading index file: {e}") from e
+            except (
+                EOFError,
+                OSError,
+                pickle.PickleError,
+                AttributeError,
+                TypeError,
+            ) as error:
+                raise ValueError(
+                    f"Error loading index file: {error}"
+                ) from error
 
         bm25_index: BM25Okapi = bm25_file['bm25']
         if k > len(bm25_index.doc_freqs):
@@ -96,21 +106,33 @@ class Retriever:
 
         try:
             save_directory.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            raise ValueError(f"Error creating saved directory: {e}") from e
+        except OSError as error:
+            raise ValueError(
+                f"Error creating saved directory: {error}"
+            ) from error
 
         # Load the dataset
         try:
-            with dataset_path.open('r', encoding='utf-8') as f:
-                rag_dataset = RagDataset.model_validate(json.load(f))
-        except (json.JSONDecodeError, Exception) as e:
-            raise ValueError(f"Error loading dataset file: {e}") from e
+            with dataset_path.open('r', encoding='utf-8') as file:
+                rag_dataset = RagDataset.model_validate(json.load(file))
+        except (
+            OSError,
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            ValidationError,
+        ) as error:
+            raise ValueError(
+                f"Error loading or validating dataset file: {error}"
+            ) from error
 
         results: List[MinimalSearchResults] = []
-        for question in rag_dataset.rag_questions:
-            print(f"Processing question ID: {question.question.id}")
+        for question in tqdm(
+            rag_dataset.rag_questions,
+            desc="Retrieving dataset questions",
+            unit=" question",
+        ):
             results.append(MinimalSearchResults(
-                question_id=question.question.id,
+                question_id=question.question_id,
                 question=question.question,
                 retrieved_sources=self.query(question.question, k)
             ))

@@ -8,7 +8,12 @@ import pickle
 import numpy as np
 from rank_bm25 import BM25Okapi
 
-from src.models import MinimalSource, StudentSearchResults, MinimalSearchResults
+from src.models import (
+    MinimalSource,
+    StudentSearchResults,
+    RagDataset,
+    MinimalSearchResults
+)
 from src.indexing.indexing import Indexer
 
 
@@ -80,7 +85,7 @@ class Retriever:
     def query_batch(
         self,
         dataset_path: Path,
-        saved_directory: Path,
+        save_directory: Path,
         k: int = 5
     ) -> Path:
         """Retrieve the top-k results for each question in a dataset."""
@@ -89,21 +94,30 @@ class Retriever:
         if k <= 0:
             raise ValueError("k must be a positive integer.")
 
-        # Load the dataset
         try:
-            with dataset_path.open('r', encoding='utf-8') as f:
-                rag_questions = json.load(f)['rag_questions']
-        except (json.JSONDecodeError, Exception) as e:
-            raise ValueError(f"Error loading dataset file: {e}") from e
-
-        try:
-            saved_directory.mkdir(parents=True, exist_ok=True)
+            save_directory.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             raise ValueError(f"Error creating saved directory: {e}") from e
 
-        # try:
-        #     result_path = saved_directory / dataset_path.name
-            # with result_path.open('w', encoding='utf-8') as f:
-        results: list[StudentSearchResults] = []
-        for question in rag_questions:
-            
+        # Load the dataset
+        try:
+            with dataset_path.open('r', encoding='utf-8') as f:
+                rag_dataset = RagDataset.model_validate(json.load(f))
+        except (json.JSONDecodeError, Exception) as e:
+            raise ValueError(f"Error loading dataset file: {e}") from e
+
+        results: List[MinimalSearchResults] = []
+        for question in rag_dataset.rag_questions:
+            results.append(MinimalSearchResults(
+                question_id=question.question.id,
+                question=question.question,
+                retrieved_sources=self.query(question.question, k)
+            ))
+        try:
+            search_result = StudentSearchResults(search_results=results, k=k)
+            result_path = save_directory / dataset_path.name
+            with result_path.open('w', encoding='utf-8') as f:
+                json.dump(search_result.model_dump(), f, indent=4)
+        except (OSError, TypeError, ValueError) as e:
+            raise ValueError(f"Error saving search results: {e}") from e
+        return result_path

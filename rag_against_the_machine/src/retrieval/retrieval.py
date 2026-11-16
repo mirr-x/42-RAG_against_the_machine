@@ -108,6 +108,7 @@ class Retriever:
 
         results: List[MinimalSearchResults] = []
         for question in rag_dataset.rag_questions:
+            print(f"Processing question ID: {question.question.id}")
             results.append(MinimalSearchResults(
                 question_id=question.question.id,
                 question=question.question,

@@ -11,6 +11,9 @@ run-index:
 run-search:
 	uv run python -m src search --query "what is a multimodal model?" --k 5
 
+run-search_dataset:
+	uv run python -m src search_dataset --dataset_path data/datasets_public/public/UnansweredQuestions/dataset_code_public.json --k 10 --save_directory data/output/search_results/UnansweredQuestions
+
 lint:
 	uv run flake8 . --exclude=.venv,data,tmp,tests
 	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude='(^|/)(\.venv|data|tmp|tests)(/|$$)'

@@ -1,0 +1,277 @@
+# Phase 5 plan: Answer Generation
+
+Current code already provides:
+
+- A persisted BM25 index in `src/indexing/indexing.py`
+- Ranked `MinimalSource` results from `src/retrieval/retrieval.py`
+- Dataset search output using `StudentSearchResults`
+- A Fire CLI in `src/cli/cli.py`
+- Source paths and character offsets that point into `data/raw/vllm-0.10.1/`
+
+Phase 5 should add answer generation only. Do not change the BM25 ranking,
+chunking, source paths, or retrieval output unless an answer-generation
+integration requires a directly related fix.
+
+## Step 1: Add the answer output models
+
+Extend `src/models.py` with the two models required by the specification:
+
+```text
+MinimalAnswer:
+  question_id
+  question
+  retrieved_sources
+  answer
+
+StudentSearchResultsAndAnswer:
+  search_results: List[MinimalAnswer]
+  k
+```
+
+`MinimalAnswer` should inherit from `MinimalSearchResults` and add:
+
+```text
+answer: str
+```
+
+Keep the existing `StudentSearchResults` schema unchanged. Search results and
+answer results are different output contracts and must not be mixed.
+
+## Step 2: Add a source-context loader
+
+Create a small helper in the answer-generation module that converts each
+`MinimalSource` into context text.
+
+For every source:
+
+1. Resolve the `file_path` relative to the repository root.
+2. Read the referenced file as UTF-8.
+3. Slice from `first_character_index` through `last_character_index`.
+4. Preserve the source order returned by the retriever.
+5. Label each context block with its file path and character range.
+
+The evaluator compares source metadata separately, so retain the original
+`MinimalSource` objects in the output. The labels are only for the model's
+context and must not replace the structured source fields.
+
+Validate before reading:
+
+- The path exists and is a file.
+- The path stays inside the configured corpus/repository root.
+- The start index is non-negative.
+- The end index is not before the start index.
+- The end index does not exceed the file length.
+
+Raise a clear error for invalid source metadata. Do not silently omit a source
+or generate an answer from an empty replacement context.
+
+## Step 3: Add a Qwen answer generator
+
+Create an answer-generation service, for example
+`src/generation/generation.py`, with one main responsibility:
+
+```text
+generate(question, retrieved_sources) -> str
+```
+
+Use the required default model:
+
+```text
+Qwen/Qwen3-0.6B
+```
+
+The model and tokenizer must be loaded once per process, not once per
+question. Keep them behind a generator class or cached factory so
+`answer_dataset` can process all questions efficiently.
+
+The generator should:
+
+1. Load the tokenizer and causal language model.
+2. Build context from the retrieved source spans.
+3. Apply a clear prompt that identifies the question and evidence.
+4. Instruct the model to answer only from the supplied context.
+5. Instruct it to state that the information is unavailable when the context
+   does not support an answer.
+6. Generate only the answer text, not a second JSON document.
+7. Remove model-specific prompt markers or generated special tokens.
+8. Return a non-empty string or raise an explicit generation error.
+
+The prompt should make grounding explicit:
+
+```text
+You answer questions about a codebase.
+Use only the supplied context.
+Do not invent APIs, behavior, file names, or configuration.
+If the context does not contain enough information, say so.
+
+Question:
+...
+
+Context:
+...
+```
+
+Use a bounded generation configuration. Keep the retrieved context and
+requested output within the model's token budget; do not pass the entire
+corpus or unbounded source text to Qwen.
+
+## Step 4: Add the required dependency configuration
+
+Add the model runtime dependencies to `pyproject.toml` using the project's
+package manager, then update `uv.lock`. Use the existing supported Python
+range and avoid unrelated dependency upgrades.
+
+The implementation must work with the mandatory Qwen model. If the runtime
+supports CPU and GPU selection, make the device choice explicit and keep a
+safe default for the evaluation environment. Model download or model-load
+errors must be reported clearly; do not return a fabricated answer.
+
+## Step 5: Add the `answer` CLI command
+
+Add this Fire command to `src/cli/cli.py`:
+
+```bash
+uv run python -m src answer \
+  --query "How does the OpenAI server work?" \
+  --k 5
+```
+
+Processing flow:
+
+1. Validate the query and `k` with the same rules as `Retriever.query`.
+2. Retrieve the top `k` `MinimalSource` objects from `INDEX_FILE`.
+3. Load the corresponding source spans.
+4. Generate one grounded answer with Qwen.
+5. Create a `MinimalAnswer` with a generated UUID, the original question,
+   the retrieved sources, and the answer.
+6. Print valid JSON only.
+
+The command must not rebuild the index. Its JSON should validate as a
+`MinimalAnswer`; do not print progress text or source lines to stdout.
+
+## Step 6: Add the `answer_dataset` CLI command
+
+Add this Fire command:
+
+```bash
+uv run python -m src answer_dataset \
+  --student_search_results_path \
+  data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
+  --save_directory \
+  data/output/search_results_and_answer/UnansweredQuestions
+```
+
+Processing flow:
+
+1. Validate that `student_search_results_path` exists.
+2. Load and validate it as `StudentSearchResults`.
+3. Preserve each result's `question_id`, `question`, and
+   `retrieved_sources`.
+4. Generate one answer from the supplied sources for each result.
+5. Display a `tqdm` progress bar for the dataset.
+6. Build `StudentSearchResultsAndAnswer` with the original `k`.
+7. Create the requested `save_directory`.
+8. Save the output using the same input filename.
+
+Expected output shape:
+
+```json
+{
+  "search_results": [
+    {
+      "question_id": "...",
+      "question": "...",
+      "retrieved_sources": [
+        {
+          "file_path": "data/raw/vllm-0.10.1/...",
+          "first_character_index": 100,
+          "last_character_index": 400
+        }
+      ],
+      "answer": "..."
+    }
+  ],
+  "k": 10
+}
+```
+
+The command must use the paths passed through CLI arguments. Do not hard-code
+dataset names or output directories. Do not read the ground-truth
+`AnsweredQuestions` answers while generating student answers.
+
+## Step 7: Handle failures explicitly
+
+Handle these cases with clear application errors rather than unhandled
+tracebacks or success-shaped fallback answers:
+
+- Empty or whitespace-only query
+- `k <= 0`
+- Missing index
+- Missing search-results JSON
+- Malformed JSON
+- Search-results JSON that fails Pydantic validation
+- Missing source file
+- Invalid source offsets
+- Model download or load failure
+- Model generation failure
+- Empty generated answer
+- Output directory or output-file failure
+
+Do not catch `Exception` broadly around the whole command. Preserve the
+existing error behavior in retrieval and add narrow handling only where
+answer generation needs it.
+
+## Step 8: Add focused tests
+
+Add tests for behavior introduced by Phase 5:
+
+- `MinimalAnswer` validates the required answer field.
+- `StudentSearchResultsAndAnswer` validates the complete dataset shape.
+- A source loader reads the exact requested character range.
+- Invalid source paths and offsets are rejected.
+- The generator receives the question and labeled retrieved context.
+- The model is initialized once when answering multiple questions.
+- A mocked generator produces a valid single-query answer.
+- `answer_dataset` preserves question IDs, sources, and `k`.
+- `answer_dataset` writes the requested filename under the requested directory.
+- Malformed input and generation failures produce explicit errors.
+
+Use a mocked tokenizer/model in tests. Do not download Qwen during the normal
+unit-test suite.
+
+## Phase 5 completion criteria
+
+Phase 5 is complete only when all of these work:
+
+```bash
+uv run python -m src index --max_chunk_size 1500
+
+uv run python -m src search_dataset \
+  --dataset_path data/datasets_public/public/UnansweredQuestions/dataset_docs_public.json \
+  --k 10 \
+  --save_directory data/output/search_results/UnansweredQuestions
+
+uv run python -m src answer \
+  --query "How does the OpenAI server work?" \
+  --k 5
+
+uv run python -m src answer_dataset \
+  --student_search_results_path \
+  data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
+  --save_directory \
+  data/output/search_results_and_answer/UnansweredQuestions
+```
+
+And the following are true:
+
+- Qwen/Qwen3-0.6B is the default answer model.
+- The model is loaded once per process.
+- Answers are generated from retrieved source spans, not the full corpus.
+- Single-query output is valid structured JSON.
+- Dataset output validates as `StudentSearchResultsAndAnswer`.
+- Question IDs, source paths, offsets, and `k` are preserved.
+- Output paths are configurable through CLI arguments.
+- Answers are instructed to remain grounded in the supplied context.
+- Model and file failures are surfaced explicitly.
+- Focused Phase 5 tests pass without downloading the model.
+- Existing Phase 4 retrieval tests and behavior still pass.

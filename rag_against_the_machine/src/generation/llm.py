@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from
+from transformers import A
 
 SYSTEM_PROMPT: str = (
     "You are a precise vLLM codebase assistant. Answer the user's question "

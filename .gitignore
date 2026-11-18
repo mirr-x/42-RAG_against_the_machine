@@ -222,4 +222,3 @@ vllm-0.10.1
 datasets_public
 chunks.jsonl
 bm25.pkl
-tmp

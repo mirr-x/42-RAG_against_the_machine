@@ -73,3 +73,14 @@ class AnsweredQuestion(UnansweredQuestion):
 class RagDataset(BaseModel):
     """A dataset containing answered and unanswered questions."""
     rag_questions: list[AnsweredQuestion | UnansweredQuestion]
+
+
+class MinimalAnswer(MinimalSearchResults):
+    """A generated answer By llm."""
+    answer: str
+
+
+class StudentSearchResultsAndAnswer(BaseModel):
+    """A representation of search results with generated answers."""
+    search_results: List[MinimalAnswer]
+    k: int

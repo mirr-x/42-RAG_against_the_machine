@@ -11,6 +11,7 @@ from src.config import (
 )
 from src.indexing.indexing import Indexer
 from src.retrieval.retrieval import Retriever
+from src.generation.generation import Generation
 
 
 class CLI:
@@ -54,3 +55,9 @@ class CLI:
                 save_directory=save_directory,
                 k=k
             ))
+
+    def answer(self, question: str, k: int = 5) -> None:
+        """ Answer a question using the RAG system """
+        # TODO: do this first an then coninur the other answer_dataset u ll just loop
+        # TODO: Step 5: Add the answer CLI command
+        pass

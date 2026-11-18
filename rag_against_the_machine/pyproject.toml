@@ -8,6 +8,7 @@ dependencies = [
     "pydantic>=2.14.1",
     "scandir-rs>=2.10.1",
     "tqdm>=4.70.1",
+    "transformers[torch]>=5.20.2",
 ]
 
 [dependency-groups]

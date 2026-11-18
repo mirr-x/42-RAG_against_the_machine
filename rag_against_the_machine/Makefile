@@ -1,9 +1,8 @@
-
 uv:
 	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 install: uv
-	@~/.local/bin/uv sync
+	@UV_LINK_MODE=copy ~/.local/bin/uv sync
 
 run-index:
 	uv run python -m src index --max_chunk_size 1500

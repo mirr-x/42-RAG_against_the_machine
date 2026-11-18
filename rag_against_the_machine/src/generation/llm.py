@@ -2,8 +2,7 @@
 
 from typing import Any
 
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
+from
 
 SYSTEM_PROMPT: str = (
     "You are a precise vLLM codebase assistant. Answer the user's question "

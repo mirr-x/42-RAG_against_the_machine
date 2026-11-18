@@ -9,7 +9,16 @@ dependencies = [
     "scandir-rs>=2.10.1",
     "tqdm>=4.70.1",
     "transformers[torch]>=5.20.2",
+    "torch>=2.6",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
 
 [dependency-groups]
 dev = [

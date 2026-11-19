@@ -27,6 +27,22 @@ class Chunking:
 
     def run(self) -> None:
         """Run the chunking process for both Python and Markdown files."""
+        corpus_roots = (
+            ("Python", self.project_root / self.corpus_code_root),
+            ("Markdown", self.project_root / self.corpus_docs_root),
+        )
+        for corpus_type, corpus_path in corpus_roots:
+            if not corpus_path.exists():
+                raise FileNotFoundError(
+                    f"{corpus_type} corpus directory does not exist: "
+                    f"'{corpus_path}'. Provide the corpus before indexing."
+                )
+            if not corpus_path.is_dir():
+                raise NotADirectoryError(
+                    f"{corpus_type} corpus path is not a directory: "
+                    f"'{corpus_path}'."
+                )
+
         try:
             self.output_path.parent.mkdir(parents=True, exist_ok=True)
             code_chunk_count = 0

@@ -33,7 +33,7 @@ class CLI:
 
     def search(self, query: str, k: int = 5) -> None:
         """ Search the index for the given query """
-        retriver =Retriever(index_file=INDEX_FILE)
+        retriver = Retriever(index_file=INDEX_FILE)
         results: List[MinimalSource] = retriver.query(query, k, MinimalSource)
         for result in results:
             print(
@@ -64,6 +64,7 @@ class CLI:
         """ Answer a question using the RAG system """
         # TODO: Step 5: Add the answer CLI command
         results: List[Chunk] = Retriever(index_file=INDEX_FILE).query(question, k, Chunk)
+        print(results)
         for result in results:
             print(
                 f'{result.file_path} '
@@ -71,6 +72,6 @@ class CLI:
                 f'{result.last_character_index}]'
             )
         # qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
-        # generation = Generation(model=qwen_llm)
+        # generation = Generation(llm=qwen_llm)
         # print(generation.generate(question=question, retrieved_sources=results))
         pass

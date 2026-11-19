@@ -16,6 +16,9 @@ run-search_dataset_code:
 run-search_dataset_docs:
 	uv run python -m src search_dataset --dataset_path data/datasets_public/public/UnansweredQuestions/dataset_docs_public.json --k 10 --save_directory data/output/search_results/UnansweredQuestions
 
+run-answer:
+	uv run python -m src answer --question "what is a multimodal model?" --k 10
+
 run-moulinette_code:
 	./moulinette-ubuntu evaluate_student_search_results \
 	data/output/search_results/UnansweredQuestions/dataset_code_public.json \

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from transformers import A
+from transformers import pipeline
 
 SYSTEM_PROMPT: str = (
     "You are a precise vLLM codebase assistant. Answer the user's question "
@@ -21,9 +21,14 @@ SYSTEM_PROMPT: str = (
 class LLM:
     """Build prompts for the configured language model."""
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str = 'Qwen/Qwen3-0.6B'):
         self.model_name = model_name
-        self.model = AutoModelForCausalLm.from_pretrained(self.model_name)
+        self.pipeline = pipeline(
+            "text-generation",
+            model=model_name,
+            device="cpu",
+            dtype="auto",
+        )
 
     def build_qwen_prompt(
         self, question: str, retrieved_sources: list[dict[str, Any]]

@@ -261,17 +261,3 @@ uv run python -m src answer_dataset \
   --save_directory \
   data/output/search_results_and_answer/UnansweredQuestions
 ```
-
-And the following are true:
-
-- Qwen/Qwen3-0.6B is the default answer model.
-- The model is loaded once per process.
-- Answers are generated from retrieved source spans, not the full corpus.
-- Single-query output is valid structured JSON.
-- Dataset output validates as `StudentSearchResultsAndAnswer`.
-- Question IDs, source paths, offsets, and `k` are preserved.
-- Output paths are configurable through CLI arguments.
-- Answers are instructed to remain grounded in the supplied context.
-- Model and file failures are surfaced explicitly.
-- Focused Phase 5 tests pass without downloading the model.
-- Existing Phase 4 retrieval tests and behavior still pass.

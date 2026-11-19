@@ -25,16 +25,25 @@ class Retriever:
 
     def __init__(self, index_file: Path) -> None:
         self.index_file = index_file
+        if not self.index_file.exists():
+            raise FileNotFoundError(
+                f"Index file not found: '{self.index_file}'. "
+                "Build it first with `python -m src index`."
+            )
 
     def query(
             self,
             query: str,
-            data_type: MinimalSource | Chunk,
             k: int = 5,
+            data_type: MinimalSource | Chunk = MinimalSource,
             ) -> List[MinimalSource | Chunk]:
         """Retrieve the top-k results for the given query."""
         if not self.index_file.exists():
-            raise FileNotFoundError("Index file not found.")
+            raise FileNotFoundError(
+                f"Index file not found: '{self.index_file}'. "
+                "Build it first with `python -m src index`."
+            )
+            
         if (
             not query
             or not isinstance(query, str)
@@ -43,8 +52,8 @@ class Retriever:
             or len(query) < 5
         ):
             raise ValueError(
-                "query must be a non-empty string and must be between "
-                "5 and 1000 characters."
+                "query cannot be empty and must be between 5 and "
+                "1000 characters."
             )
         if not isinstance(k, int) or k <= 0 or k > 25:
             raise ValueError("k must be a positive integer.")

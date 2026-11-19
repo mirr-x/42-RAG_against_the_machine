@@ -1,6 +1,7 @@
 """ CLI for the RAG system """
 
 from pathlib import Path
+from typing import List
 
 from src.config import (
     CHUNKS_FILE,
@@ -9,9 +10,11 @@ from src.config import (
     INDEX_FILE,
     ROOT,
 )
-from src.indexing.indexing import Indexer
-from src.retrieval.retrieval import Retriever
 from src.generation.generation import Generation
+from src.retrieval.retrieval import Retriever
+from src.indexing.indexing import Indexer
+from src.models import Chunk, MinimalSource
+from src.generation.llm import LLM
 
 
 class CLI:
@@ -30,7 +33,8 @@ class CLI:
 
     def search(self, query: str, k: int = 5) -> None:
         """ Search the index for the given query """
-        results = Retriever(index_file=INDEX_FILE).query(query, k)
+        retriver =Retriever(index_file=INDEX_FILE)
+        results: List[MinimalSource] = retriver.query(query, k, MinimalSource)
         for result in results:
             print(
                 f'{result.file_path} '
@@ -58,6 +62,15 @@ class CLI:
 
     def answer(self, question: str, k: int = 5) -> None:
         """ Answer a question using the RAG system """
-        # TODO: do this first an then coninur the other answer_dataset u ll just loop
         # TODO: Step 5: Add the answer CLI command
+        results: List[Chunk] = Retriever(index_file=INDEX_FILE).query(question, k, Chunk)
+        for result in results:
+            print(
+                f'{result.file_path} '
+                f'[{result.first_character_index}:'
+                f'{result.last_character_index}]'
+            )
+        # qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
+        # generation = Generation(model=qwen_llm)
+        # print(generation.generate(question=question, retrieved_sources=results))
         pass

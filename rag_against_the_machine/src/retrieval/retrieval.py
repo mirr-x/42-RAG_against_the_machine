@@ -11,6 +11,7 @@ from rank_bm25 import BM25Okapi
 from tqdm import tqdm
 
 from src.models import (
+    Chunk,
     MinimalSource,
     StudentSearchResults,
     RagDataset,
@@ -25,14 +26,28 @@ class Retriever:
     def __init__(self, index_file: Path) -> None:
         self.index_file = index_file
 
-    def query(self, query: str, k: int = 5) -> List[MinimalSource]:
+    def query(
+            self,
+            query: str,
+            data_type: MinimalSource | Chunk,
+            k: int = 5,
+            ) -> List[MinimalSource | Chunk]:
         """Retrieve the top-k results for the given query."""
         if not self.index_file.exists():
             raise FileNotFoundError("Index file not found.")
-        if k <= 0:
+        if (
+            not query
+            or not isinstance(query, str)
+            or query.strip() == ""
+            or len(query) > 1000
+            or len(query) < 5
+        ):
+            raise ValueError(
+                "query must be a non-empty string and must be between "
+                "5 and 1000 characters."
+            )
+        if not isinstance(k, int) or k <= 0 or k > 25:
             raise ValueError("k must be a positive integer.")
-        if not query.strip():
-            raise ValueError("Query string cannot be empty.")
 
         # load the index from the index_file
         with open(self.index_file, 'rb') as index_file:
@@ -85,11 +100,14 @@ class Retriever:
             ):
                 raise ValueError("Chunk width cannot exceed 2,000 characters.")
 
-            top_k_results.append(MinimalSource(
-                file_path=chunk.file_path,
-                first_character_index=chunk.first_character_index,
-                last_character_index=chunk.last_character_index
-            ))
+            if data_type == Chunk:
+                top_k_results.append(Chunk.model_validate_json(chunk))
+            elif data_type == MinimalSource:
+                top_k_results.append(MinimalSource(
+                    file_path=chunk.file_path,
+                    first_character_index=chunk.first_character_index,
+                    last_character_index=chunk.last_character_index
+                ))
         return top_k_results
 
     def query_batch(
@@ -144,3 +162,5 @@ class Retriever:
         except (OSError, TypeError, ValueError) as e:
             raise ValueError(f"Error saving search results: {e}") from e
         return result_path
+
+    

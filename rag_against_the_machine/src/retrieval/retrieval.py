@@ -110,7 +110,7 @@ class Retriever:
                 raise ValueError("Chunk width cannot exceed 2,000 characters.")
 
             if data_type == Chunk:
-                top_k_results.append(Chunk.model_validate_json(chunk))
+                top_k_results.append(Chunk.model_validate(chunk))
             elif data_type == MinimalSource:
                 top_k_results.append(MinimalSource(
                     file_path=chunk.file_path,

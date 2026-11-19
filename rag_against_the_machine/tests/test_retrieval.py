@@ -105,7 +105,10 @@ def test_query_rejects_invalid_inputs(
 
 
 def test_query_rejects_missing_index(tmp_path: Path) -> None:
-    with pytest.raises(FileNotFoundError, match="Index file not found"):
+    with pytest.raises(
+        FileNotFoundError,
+        match=r"Index file not found: .*Build it first with",
+    ):
         Retriever(tmp_path / "missing.pkl").query("alpha")
 
 

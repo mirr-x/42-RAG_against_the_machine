@@ -1,6 +1,7 @@
 """ CLI for the RAG system """
 
 from pathlib import Path
+from time import perf_counter
 from typing import List
 
 from src.config import (
@@ -63,15 +64,10 @@ class CLI:
     def answer(self, question: str, k: int = 5) -> None:
         """ Answer a question using the RAG system """
         # TODO: Step 5: Add the answer CLI command
+        start_time = perf_counter()
         results: List[Chunk] = Retriever(index_file=INDEX_FILE).query(question, k, Chunk)
-        print(results)
-        for result in results:
-            print(
-                f'{result.file_path} '
-                f'[{result.first_character_index}:'
-                f'{result.last_character_index}]'
-            )
-        # qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
-        # generation = Generation(llm=qwen_llm)
-        # print(generation.generate(question=question, retrieved_sources=results))
-        pass
+        qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
+        generation = Generation(llm=qwen_llm)
+        answer = generation.generate(question=question, retrieved_sources=results)
+        print(answer.answer)
+        print(f"Time: {perf_counter() - start_time:.2f} seconds")

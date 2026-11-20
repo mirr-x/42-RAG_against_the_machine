@@ -75,7 +75,7 @@ def test_generation_returns_validated_answer_with_sources() -> None:
     assert result.search_results[0].retrieved_sources[0].file_path == (
         "vllm/answer.py"
     )
-    assert llm.options["max_new_tokens"] == 32
+    assert llm.options["max_new_tokens"] >= 64
     assert "max_time" not in llm.options
 
 

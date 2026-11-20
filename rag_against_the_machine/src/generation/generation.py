@@ -73,7 +73,7 @@ class Generation:
         generated: Any = self.llm.pipeline(
             prompt,
             return_full_text=False,
-            max_new_tokens=32,
+            max_new_tokens=64,
             do_sample=False,
         )
         if (

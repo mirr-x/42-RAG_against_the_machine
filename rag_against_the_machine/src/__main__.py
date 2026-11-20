@@ -16,6 +16,9 @@ if __name__ == '__main__':
     except (FileNotFoundError, NotADirectoryError) as e:
         print(f"Required input path unavailable: {e}", file=sys.stderr)
         raise SystemExit(1) from None
+    except OSError as e:
+        print(f"Input/output error: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
     except ValueError as e:
         print(f"Configuration error: {e}")
     except Exception as e:

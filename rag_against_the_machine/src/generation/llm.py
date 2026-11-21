@@ -1,5 +1,7 @@
 """LLM module for the RAG system."""
 
+from typing import Any
+
 from transformers import pipeline
 
 SYSTEM_PROMPT: str = (
@@ -28,11 +30,14 @@ class LLM:
             device="cpu",
             dtype="auto",
         )
-        self.tokenizer = self.pipeline.tokenizer
+        self.tokenizer: Any = self.pipeline.tokenizer
+        if self.tokenizer is None:
+            raise RuntimeError("The llm pipeline has no tokenizer.")
 
     def build_qwen_prompt(
         self, question: str, retrieved_sources: str
     ) -> str:
+        """ Build a prompt for the Qwen model. """
         messages = [
             {
                 "role": "system",
@@ -50,9 +55,13 @@ class LLM:
                 ),
             },
         ]
-        return self.tokenizer.apply_chat_template(
+        prompt = self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True,
             enable_thinking=False,
         )
+
+        if not isinstance(prompt, str):
+            raise TypeError("The tokenizer must return a string prompt.")
+        return prompt

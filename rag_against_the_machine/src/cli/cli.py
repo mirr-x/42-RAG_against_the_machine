@@ -35,7 +35,11 @@ class CLI:
     def search(self, query: str, k: int = 5) -> None:
         """ Search the index for the given query """
         retriver = Retriever(index_file=INDEX_FILE)
-        results: List[MinimalSource] = retriver.query(query, k, MinimalSource)
+        results: List[MinimalSource] = retriver.query(
+            query,
+            k,
+            MinimalSource  # type: ignore[arg-type]
+        )
         for result in results:
             print(
                 f'{result.file_path} '
@@ -63,11 +67,26 @@ class CLI:
 
     def answer(self, question: str, k: int = 5) -> None:
         """ Answer a question using the RAG system """
-        # TODO: Step 5: Add the answer CLI command
         start_time = perf_counter()
-        results: List[Chunk] = Retriever(index_file=INDEX_FILE).query(question, k, Chunk)
+        results: List[Chunk] = Retriever(index_file=INDEX_FILE).query(
+            question,
+            k,
+            Chunk   # type: ignore[arg-type]
+        )
         qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
         generation = Generation(llm=qwen_llm)
-        answer = generation.generate(question=question, retrieved_sources=results)
+        answer = generation.generate(
+            question=question,
+            retrieved_sources=results
+        )
         print(answer.answer)
         print(f"Time: {perf_counter() - start_time:.2f} seconds")
+
+    def answer_dataset(
+        self,
+        dataset_path_: str,
+        save_directory_: str,
+        k: int = 5,
+    ) -> None:
+        """ Answer questions from a dataset and save the results to a file """
+        

@@ -10,7 +10,6 @@ from src.models import (
     MarkdownChunk,
     MinimalAnswer,
     MinimalSource,
-    StudentSearchResultsAndAnswer,
 )
 from src.generation.llm import LLM
 
@@ -28,12 +27,19 @@ class Generation:
         self.llm = llm
 
     @staticmethod
-    def format_chunks_for_llm(chunks: list[Chunk]) -> str:
+    def format_chunks_for_llm_as_xml(chunks: list[Chunk]) -> str:
+        """Format retrieved chunks as XML documents for the language model.
+
+        Args:
+            chunks: The chunks to serialize, including their metadata.
+
+        Returns:
+            A string containing one XML document block per chunk.
+        """
         formatted_blocks = []
 
         for i, chunk in enumerate(chunks, start=1):
             meta = chunk.metadata
-            
             # Build specific attributes based on the metadata type
             if isinstance(meta, CodeChunk):
                 header_info = (
@@ -52,7 +58,10 @@ class Generation:
                 header_info = f'file="{chunk.file_path}"'
 
             # Wrap in XML tags
-            block = f"<document index=\"{i}\" {header_info}>\n{chunk.content}\n</document>"
+            block = (
+                f"<document index=\"{i}\" {header_info}>\n"
+                f"{chunk.content}\n</document>"
+            )
             formatted_blocks.append(block)
 
         return "\n\n".join(formatted_blocks)
@@ -61,12 +70,12 @@ class Generation:
         self,
         question: str,
         retrieved_sources: list[Chunk],
-    ) -> StudentSearchResultsAndAnswer:
+    ) -> MinimalAnswer:
         """Generate a structured, source-linked answer for one question."""
-        contexts: str = self.format_chunks_for_llm(retrieved_sources)
+        contexts: str = self.format_chunks_for_llm_as_xml(retrieved_sources)
         prompt: str = self.llm.build_qwen_prompt(question, contexts)
         print(
-            "Generating a concise answer on CPU; this may take a few minutes...",
+            "Generating the answer on CPU; this may take a few minutes...",
             file=sys.stderr,
             flush=True,
         )
@@ -82,7 +91,9 @@ class Generation:
             or not isinstance(generated[0], dict)
             or not isinstance(generated[0].get("generated_text"), str)
         ):
-            raise RuntimeError("The language model returned an invalid response.")
+            raise RuntimeError(
+                "The language model returned an invalid response."
+            )
 
         return MinimalAnswer(
             question_id=str(uuid.uuid4()),
@@ -97,7 +108,3 @@ class Generation:
             ],
             answer=generated[0]["generated_text"],
         )
-        # return StudentSearchResultsAndAnswer(
-        #     search_results=[answer],
-        #     k=len(retrieved_sources),
-        # )

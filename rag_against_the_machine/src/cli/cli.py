@@ -68,7 +68,7 @@ class CLI:
     def answer(self, question: str, k: int = 5) -> None:
         """ Answer a question using the RAG system """
         start_time = perf_counter()
-        results: List[Chunk] = Retriever(index_file=INDEX_FILE).query(
+        sources: List[Chunk] = Retriever(index_file=INDEX_FILE).query(
             question,
             k,
             Chunk   # type: ignore[arg-type]
@@ -77,16 +77,32 @@ class CLI:
         generation = Generation(llm=qwen_llm)
         answer = generation.generate(
             question=question,
-            retrieved_sources=results
+            retrieved_sources=sources
         )
         print(answer.answer)
         print(f"Time: {perf_counter() - start_time:.2f} seconds")
 
     def answer_dataset(
         self,
-        dataset_path_: str,
-        save_directory_: str,
+        student_search_results_path: str,
+        save_directory: str,
         k: int = 5,
     ) -> None:
         """ Answer questions from a dataset and save the results to a file """
-        
+        start_time = perf_counter()
+        dataset_path: Path = Path(student_search_results_path)
+        save_directory_path: Path = Path(save_directory)
+
+        retriever = Retriever(index_file=INDEX_FILE)
+        qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
+        generation = Generation(llm=qwen_llm)
+        print(
+            'Saved student_search_results_and_answer to ',
+            generation.generate_batch(
+                dataset_path=dataset_path,
+                save_directory=save_directory_path,
+                retriever=retriever,
+                k=k
+            )
+        )
+        print(f"Time: {perf_counter() - start_time:.2f} seconds")

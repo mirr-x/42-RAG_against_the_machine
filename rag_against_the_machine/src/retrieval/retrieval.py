@@ -15,7 +15,7 @@ from src.models import (
     MinimalSource,
     StudentSearchResults,
     RagDataset,
-    MinimalSearchResults
+    MinimalSearchResults,
 )
 from src.indexing.indexing import Indexer
 
@@ -35,7 +35,7 @@ class Retriever:
             self,
             query: str,
             k: int = 5,
-            data_type: MinimalSource | Chunk = MinimalSource,
+            data_type: type[MinimalSource] | type[Chunk] = MinimalSource,
             ) -> List[MinimalSource | Chunk]:
         """Retrieve the top-k results for the given query."""
         if not self.index_file.exists():
@@ -43,7 +43,6 @@ class Retriever:
                 f"Index file not found: '{self.index_file}'. "
                 "Build it first with `python -m src index`."
             )
-            
         if (
             not query
             or not isinstance(query, str)
@@ -161,7 +160,10 @@ class Retriever:
             results.append(MinimalSearchResults(
                 question_id=question.question_id,
                 question=question.question,
-                retrieved_sources=self.query(question.question, k)
+                retrieved_sources=self.query(
+                    question.question,
+                    k
+                )  # type: ignore[arg-type]
             ))
         try:
             search_result = StudentSearchResults(search_results=results, k=k)
@@ -171,5 +173,3 @@ class Retriever:
         except (OSError, TypeError, ValueError) as e:
             raise ValueError(f"Error saving search results: {e}") from e
         return result_path
-
-    

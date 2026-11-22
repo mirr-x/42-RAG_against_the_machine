@@ -49,19 +49,19 @@ class CLI:
 
     def search_dataset(
         self,
-        dataset_path_: str,
-        save_directory_: str,
+        dataset_path: str,
+        save_directory: str,
         k: int = 5,
     ) -> None:
         """ Answer questions from a dataset and save the results to a file """
-        dataset_path: Path = Path(dataset_path_)
-        save_directory: Path = Path(save_directory_)
+        dataset_path_obj: Path = Path(dataset_path)
+        save_directory_obj: Path = Path(save_directory)
 
         print(
             'Saved student_search_results to ',
             Retriever(index_file=INDEX_FILE).query_batch(
-                dataset_path=dataset_path,
-                save_directory=save_directory,
+                dataset_path=dataset_path_obj,
+                save_directory=save_directory_obj,
                 k=k
             ))
 

@@ -4,6 +4,7 @@ MAX_CHUNK_SIZE := 1500
 MAX_CONTEXT_LENGTH := 2000
 DATASET_DIR := data/datasets_public/public
 SEARCH_RESULTS_DIR := data/output/search_results/UnansweredQuestions
+ANSWER_RESULTS_DIR := data/output/search_results_and_answer/UnansweredQuestions
 
 
 help:
@@ -31,6 +32,12 @@ run-search_dataset_docs:
 run-answer:
 	uv run python -m src answer --question "what is a multimodal model?" --k $(K)
 
+run-answer-dataset_code:
+	uv run python -m src answer_dataset --student_search_results_path $(SEARCH_RESULTS_DIR)/dataset_code_public.json --save_directory $(ANSWER_RESULTS_DIR) --k $(K)
+
+run-answer-dataset_docs:
+	uv run python -m src answer_dataset --student_search_results_path $(SEARCH_RESULTS_DIR)/dataset_docs_public.json --save_directory $(ANSWER_RESULTS_DIR) --k $(K)
+
 run-moulinette_code:
 	./moulinette-ubuntu evaluate_student_search_results \
 	$(SEARCH_RESULTS_DIR)/dataset_code_public.json \
@@ -44,6 +51,12 @@ run-moulinette_docs:
 	$(DATASET_DIR)/AnsweredQuestions/dataset_docs_public.json \
 	--k $(K) \
 	--max_context_length $(MAX_CONTEXT_LENGTH)
+
+run-moulinette_answer_code:
+	./moulinette-ubuntu evaluate_student_answers $(ANSWER_RESULTS_DIR)/dataset_code_public.json
+
+run-moulinette_answer_docs:
+	./moulinette-ubuntu evaluate_student_answers $(ANSWER_RESULTS_DIR)/dataset_docs_public.json
 
 lint:
 	uv run flake8 . --exclude=.venv,data,tmp,tests

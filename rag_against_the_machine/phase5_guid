@@ -37,34 +37,6 @@ answer: str
 Keep the existing `StudentSearchResults` schema unchanged. Search results and
 answer results are different output contracts and must not be mixed.
 
-## Step 2: Add a source-context loader
-
-Create a small helper in the answer-generation module that converts each
-`MinimalSource` into context text.
-
-For every source:
-
-1. Resolve the `file_path` relative to the repository root.
-2. Read the referenced file as UTF-8.
-3. Slice from `first_character_index` through `last_character_index`.
-4. Preserve the source order returned by the retriever.
-5. Label each context block with its file path and character range.
-
-The evaluator compares source metadata separately, so retain the original
-`MinimalSource` objects in the output. The labels are only for the model's
-context and must not replace the structured source fields.
-
-Validate before reading:
-
-- The path exists and is a file.
-- The path stays inside the configured corpus/repository root.
-- The start index is non-negative.
-- The end index is not before the start index.
-- The end index does not exceed the file length.
-
-Raise a clear error for invalid source metadata. Do not silently omit a source
-or generate an answer from an empty replacement context.
-
 ## Step 3: Add a Qwen answer generator
 
 Create an answer-generation service, for example

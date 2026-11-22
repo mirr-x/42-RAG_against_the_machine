@@ -77,6 +77,9 @@ class RagDataset(BaseModel):
 
 class MinimalAnswer(MinimalSearchResults):
     """A generated answer By llm."""
+    question_id: str
+    question: str
+    retrieved_sources: List[MinimalSource]
     answer: str
 
 

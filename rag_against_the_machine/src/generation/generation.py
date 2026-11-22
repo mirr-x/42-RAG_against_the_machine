@@ -91,7 +91,7 @@ class Generation:
         generated: Any = self.llm.pipeline(
             prompt,
             return_full_text=False,
-            max_new_tokens=64,
+            max_new_tokens=128,
             do_sample=False,
         )
         if (

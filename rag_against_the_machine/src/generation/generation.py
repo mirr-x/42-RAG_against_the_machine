@@ -1,8 +1,14 @@
 """ Generation module for the RAG system. """
 
 import sys
-from typing import Any
 import uuid
+from typing import Any, List
+from pathlib import Path
+
+
+import json
+from tqdm import tqdm
+from pydantic import ValidationError
 
 from src.models import (
     Chunk,
@@ -10,8 +16,11 @@ from src.models import (
     MarkdownChunk,
     MinimalAnswer,
     MinimalSource,
+    RagDataset,
+    StudentSearchResultsAndAnswer,
 )
 from src.generation.llm import LLM
+from src.retrieval.retrieval import Retriever
 
 
 class Generation:
@@ -108,3 +117,64 @@ class Generation:
             ],
             answer=generated[0]["generated_text"],
         )
+
+    def generate_batch(
+        self,
+        dataset_path: Path,
+        save_directory: Path,
+        retriever: Retriever,
+        k: int = 5,
+    ) -> Path:
+        """Generate answers for each question in a dataset and save  results"""
+        if not dataset_path.exists():
+            raise FileNotFoundError("Dataset file not found.")
+        if k <= 0:
+            raise ValueError("k must be a positive integer.")
+
+        try:
+            save_directory.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise ValueError(
+                f"Error creating saved directory: {error}"
+            ) from error
+
+        # load the dataset
+        try:
+            with dataset_path.open('r', encoding='utf-8') as file:
+                rag_dataset = RagDataset.model_validate(json.load(file))
+        except (
+            OSError,
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            ValidationError,
+        ) as error:
+            raise ValueError(
+                f"Error loading or validating dataset file: {error}"
+            ) from error
+
+        results: list[MinimalAnswer] = []
+        for question in tqdm(
+            rag_dataset.rag_questions,
+            desc="Generating answers",
+            unit=" question",
+        ):
+            retrieved_sources: List[Chunk] = retriever.query(
+                        question.question,
+                        k,
+                        Chunk   # type: ignore[arg-type]
+                    )
+            results.append(self.generate(
+                question=question.question,
+                retrieved_sources=retrieved_sources
+            ))
+        try:
+            output = StudentSearchResultsAndAnswer(
+                search_results=results,
+                k=k
+            )
+            output_file_path = save_directory / dataset_path.name
+            with output_file_path.open('w', encoding='utf-8') as f:
+                json.dump(output.model_dump(), f, ensure_ascii=False, indent=4)
+        except (OSError, TypeError, ValueError) as e:
+            raise ValueError(f"Error saving generated answers: {e}") from e
+        return output_file_path

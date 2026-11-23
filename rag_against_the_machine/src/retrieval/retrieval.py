@@ -1,7 +1,7 @@
 """Retrieval and search functionality for the RAG system."""
 
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import json
 import pickle
@@ -30,13 +30,44 @@ class Retriever:
                 f"Index file not found: '{self.index_file}'. "
                 "Build it first with `python -m src index`."
             )
+        self.bm25_index, self.chunks = self._load_index()
+
+    def _load_index(self) -> tuple[BM25Okapi, list[Chunk]]:
+        """Load and validate the persisted BM25 index once per retriever."""
+        try:
+            with self.index_file.open('rb') as index_file:
+                persisted_index = pickle.load(index_file)
+            bm25_index = persisted_index['bm25']
+            chunks = persisted_index['chunks']
+            if not isinstance(bm25_index, BM25Okapi):
+                raise TypeError("Persisted BM25 index has an invalid type.")
+            if not isinstance(chunks, list):
+                raise TypeError(
+                    "Persisted chunk collection has an invalid type."
+                )
+            validated_chunks = [
+                Chunk.model_validate(chunk)
+                for chunk in chunks
+            ]
+        except (
+            EOFError,
+            KeyError,
+            OSError,
+            pickle.PickleError,
+            TypeError,
+            ValueError,
+        ) as error:
+            raise ValueError(
+                f"Error loading index file '{self.index_file}': {error}"
+            ) from error
+        return bm25_index, validated_chunks
 
     def query(
-            self,
-            query: str,
-            k: int = 5,
-            data_type: type[MinimalSource] | type[Chunk] = MinimalSource,
-            ) -> List[MinimalSource | Chunk]:
+        self,
+        query: str,
+        k: int = 5,
+        data_type: type[MinimalSource] | type[Chunk] = MinimalSource,
+    ) -> list[Any]:
         """Retrieve the top-k results for the given query."""
         if not self.index_file.exists():
             raise FileNotFoundError(
@@ -57,23 +88,9 @@ class Retriever:
         if not isinstance(k, int) or k <= 0 or k > 25:
             raise ValueError("k must be a positive integer.")
 
-        # load the index from the index_file
-        with open(self.index_file, 'rb') as index_file:
-            try:
-                bm25_file = pickle.load(index_file)
-            except (
-                EOFError,
-                OSError,
-                pickle.PickleError,
-                AttributeError,
-                TypeError,
-            ) as error:
-                raise ValueError(
-                    f"Error loading index file: {error}"
-                ) from error
-
-        bm25_index: BM25Okapi = bm25_file['bm25']
-        if k > len(bm25_index.doc_freqs):
+        if data_type not in (Chunk, MinimalSource):
+            raise ValueError("data_type must be Chunk or MinimalSource.")
+        if k > len(self.chunks):
             raise ValueError("k cannot be greater than the number of chunks.")
 
         # Apply the same tokenizer used by Indexer.
@@ -85,7 +102,7 @@ class Retriever:
             )
 
         # Calculate BM25 scores.
-        scores = bm25_index.get_scores(tokenized_query)
+        scores = self.bm25_index.get_scores(tokenized_query)
 
         # Select the top k chunks and select the k
         top_k_unsorted = np.argpartition(scores, -k)[-k:]
@@ -96,9 +113,9 @@ class Retriever:
         )
 
         # Return the top k results as models instead of printing them.
-        top_k_results = []
+        top_k_results: list[MinimalSource | Chunk] = []
         for i in top_k_sorted:
-            chunk = bm25_file['chunks'][i]
+            chunk = self.chunks[i]
             if chunk.last_character_index < chunk.first_character_index:
                 raise ValueError(
                     "Chunk end index cannot precede its start index.")
@@ -162,8 +179,9 @@ class Retriever:
                 question=question.question,
                 retrieved_sources=self.query(
                     question.question,
-                    k
-                )  # type: ignore[arg-type]
+                    k,
+                    MinimalSource,
+                )
             ))
         try:
             search_result = StudentSearchResults(search_results=results, k=k)

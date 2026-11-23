@@ -17,10 +17,10 @@ uv:
 install: uv
 	@UV_LINK_MODE=copy $(UV) sync
 
-run-index:
+index:
 	uv run python -m src index --max_chunk_size $(MAX_CHUNK_SIZE)
 
-run-search:
+search:
 	uv run python -m src search --query "what is a multimodal model?" --k $(K)
 
 run-search_dataset_code:
@@ -65,6 +65,7 @@ lint:
 clean:
 	find . -name '__pycache__' -exec rm -rf {} +
 	find . -name '.pytest_cache' -exec rm -rf {} +
+	find . -name '.mypy_cache' -exec rm -rf {} +
 
 
 .PHONY: help uv install run-index run-search run-search_dataset_code run-search_dataset_docs run-moulinette_code run-moulinette_docs lint clean

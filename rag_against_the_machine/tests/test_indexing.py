@@ -31,6 +31,7 @@ def _index_documents(
         tokenized_documents: list[list[str]],
         *,
         b: float = 0.75,
+        epsilon: float = 0.25,
     ) -> object:
         documents.extend(tokenized_documents)
         return object()

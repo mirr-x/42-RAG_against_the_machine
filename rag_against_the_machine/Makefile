@@ -90,6 +90,9 @@ run-moulinette_answer_code:
 run-moulinette_answer_docs:
 	./$(MOULINETTE) evaluate_student_answers $(ANSWER_RESULTS_DIR)/dataset_docs_public.json
 
+test:
+	uv run pytest
+
 lint:
 	uv run flake8 . --exclude=.venv,data,tmp,tests
 	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude='(^|/)(\.venv|data|tmp|tests)(/|$$)'
@@ -100,4 +103,4 @@ clean:
 	find . -name '.mypy_cache' -exec rm -rf {} +
 
 
-.PHONY: help uv install prepare-datasets index search run-search_dataset_code run-search_dataset_docs run-answer run-answer-dataset_code run-answer-dataset_docs run-moulinette run-moulinette_code run-moulinette_docs run-moulinette_answer_code run-moulinette_answer_docs lint clean
+.PHONY: help uv install prepare-datasets index search run-search_dataset_code run-search_dataset_docs run-answer run-answer-dataset_code run-answer-dataset_docs run-moulinette run-moulinette_code run-moulinette_docs run-moulinette_answer_code run-moulinette_answer_docs test lint clean

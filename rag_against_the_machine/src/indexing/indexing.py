@@ -8,7 +8,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from src.chunking.chuncking import Chunking
-from src.models import Chunk
+from src.models import Chunk, CodeChunk, MarkdownChunk
 
 TOKEN_PATTERN = re.compile(r'[A-Za-z0-9_]+')
 
@@ -73,11 +73,34 @@ class Indexer:
 
         return tokens
 
+    @staticmethod
+    def _index_document(chunk: Chunk) -> str:
+        """Include searchable metadata alongside each chunk's source text."""
+        metadata = chunk.metadata
+        if isinstance(metadata, CodeChunk):
+            fields = [
+                metadata.name,
+                metadata.signature,
+                metadata.parent_context or "",
+                chunk.content,
+            ]
+        elif isinstance(metadata, MarkdownChunk):
+            fields = [
+                f"heading level {metadata.level}",
+                metadata.title,
+                chunk.content,
+            ]
+        else:
+            raise TypeError(
+                f"Unsupported chunk metadata type: {type(metadata).__name__}."
+            )
+        return " ".join(field for field in fields if field)
+
     def _build_bm25(self, chunks: list[Chunk]) -> dict[str, object]:
         """Build a ready-to-search BM25 index with ``rank-bm25``."""
         print('')
         tokenized_documents = [
-            self.tokenize(chunk.content)
+            self.tokenize(self._index_document(chunk))
             for chunk in tqdm(
                 chunks, desc="Tokenizing chunks", unit=" chunk", ascii="-#"
             )

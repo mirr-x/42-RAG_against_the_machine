@@ -22,7 +22,7 @@ def test_format_chunks_includes_metadata_and_content() -> None:
         MarkdownChunk(title="Models", level=2, start_line=4, end_line=6)
     )
 
-    formatted = Generation.format_chunks_for_llm([chunk])
+    formatted = Generation.format_chunks_for_llm_as_xml([chunk])
 
     assert (
         formatted
@@ -45,7 +45,7 @@ def test_prompt_includes_system_instructions_and_context() -> None:
 
     llm = LLM.__new__(LLM)
     llm.tokenizer = FakeTokenizer()
-    context = Generation.format_chunks_for_llm(
+    context = Generation.format_chunks_for_llm_as_xml(
         [
             _chunk(
                 CodeChunk(

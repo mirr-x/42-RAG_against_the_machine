@@ -112,6 +112,41 @@ def test_query_rejects_missing_index(tmp_path: Path) -> None:
         Retriever(tmp_path / "missing.pkl").query("alpha")
 
 
+def test_query_accepts_k_larger_than_twenty_five(tmp_path: Path) -> None:
+    index_path = tmp_path / "bm25.pkl"
+    chunks = [
+        Chunk(
+            id=str(index),
+            content=f"term{index}",
+            file_path=f"vllm/file{index}.py",
+            chunk_type="code",
+            first_character_index=0,
+            last_character_index=5,
+            metadata=CodeChunk(
+                name=f"function{index}",
+                type="function",
+                signature=f"def function{index}():",
+            ),
+        )
+        for index in range(30)
+    ]
+    tokenized_chunks = [Indexer.tokenize(chunk.content) for chunk in chunks]
+    with index_path.open("wb") as file:
+        pickle.dump(
+            {
+                "version": 1,
+                "algorithm": "rank-bm25",
+                "bm25": BM25Okapi(tokenized_chunks),
+                "chunks": chunks,
+            },
+            file,
+        )
+
+    results = Retriever(index_path).query("term", k=30)
+
+    assert len(results) == 30
+
+
 def test_query_batch_preserves_ids_and_saves_json(tmp_path: Path) -> None:
     index_path = tmp_path / "bm25.pkl"
     _write_index(index_path)

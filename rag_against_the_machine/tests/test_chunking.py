@@ -14,9 +14,6 @@ def test_missing_corpus_fails_before_creating_output(
 ) -> None:
     python_corpus = Path("data/raw/vllm-0.10.1/vllm")
     markdown_corpus = Path("data/raw/vllm-0.10.1/docs")
-    missing_root = (
-        python_corpus if missing_corpus == "python" else markdown_corpus
-    )
     existing_root = (
         markdown_corpus if missing_corpus == "python" else python_corpus
     )

@@ -1,6 +1,5 @@
 """Tests for structured single-question answer generation."""
 
-import json
 from pathlib import Path
 
 from src.cli import cli as cli_module
@@ -12,7 +11,6 @@ from src.models import (
     CodeChunk,
     MinimalAnswer,
     MinimalSource,
-    StudentSearchResultsAndAnswer,
 )
 
 
@@ -32,23 +30,18 @@ def _chunk() -> Chunk:
     )
 
 
-def _response() -> StudentSearchResultsAndAnswer:
-    return StudentSearchResultsAndAnswer(
-        search_results=[
-            MinimalAnswer(
-                question_id="question-1",
-                question="What does answer return?",
-                retrieved_sources=[
-                    MinimalSource(
-                        file_path="vllm/answer.py",
-                        first_character_index=0,
-                        last_character_index=28,
-                    )
-                ],
-                answer="It returns 42.",
+def _response() -> MinimalAnswer:
+    return MinimalAnswer(
+        question_id="question-1",
+        question="What does answer return?",
+        retrieved_sources=[
+            MinimalSource(
+                file_path="vllm/answer.py",
+                first_character_index=0,
+                last_character_index=28,
             )
         ],
-        k=1,
+        answer="It returns 42.",
     )
 
 
@@ -70,16 +63,15 @@ def test_generation_returns_validated_answer_with_sources() -> None:
         [_chunk()],
     )
 
-    assert result.k == 1
-    assert result.search_results[0].answer == "It returns 42."
-    assert result.search_results[0].retrieved_sources[0].file_path == (
+    assert result.answer == "It returns 42."
+    assert result.retrieved_sources[0].file_path == (
         "vllm/answer.py"
     )
     assert llm.options["max_new_tokens"] >= 64
     assert "max_time" not in llm.options
 
 
-def test_answer_prints_json(monkeypatch, capsys) -> None:
+def test_answer_prints_generated_answer(monkeypatch, capsys) -> None:
     response = _response()
     clock_values = iter([10.0, 15.375])
 
@@ -102,14 +94,14 @@ def test_answer_prints_json(monkeypatch, capsys) -> None:
 
         def generate(
             self, question: str, retrieved_sources: list[Chunk]
-        ) -> StudentSearchResultsAndAnswer:
+        ) -> MinimalAnswer:
             return response
 
     monkeypatch.setattr(cli_module, "Retriever", FakeRetriever)
     monkeypatch.setattr(cli_module, "LLM", FakeLLM)
     monkeypatch.setattr(cli_module, "Generation", FakeGeneration)
     monkeypatch.setattr(
-        cli_module.time,
+        cli_module,
         "perf_counter",
         lambda: next(clock_values),
     )
@@ -117,52 +109,8 @@ def test_answer_prints_json(monkeypatch, capsys) -> None:
     CLI().answer("What does answer return?", k=1)
 
     captured = capsys.readouterr()
-    output = json.loads(captured.out)
-    assert output["k"] == 1
-    assert output["search_results"][0]["question_id"] == "question-1"
-    assert output["search_results"][0]["retrieved_sources"][0]["file_path"] == (
-        "vllm/answer.py"
-    )
-    assert "Total answer command time: 5.38 seconds." in captured.err
-
-
-def test_answer_can_save_json_to_requested_path(
-    monkeypatch,
-    tmp_path: Path,
-) -> None:
-    response = _response()
-
-    class FakeRetriever:
-        def __init__(self, index_file: Path) -> None:
-            pass
-
-        def query(
-            self, question: str, k: int, data_type: type[Chunk]
-        ) -> list[Chunk]:
-            return [_chunk()]
-
-    class FakeLLM:
-        def __init__(self, model_name: str) -> None:
-            pass
-
-    class FakeGeneration:
-        def __init__(self, llm: FakeLLM) -> None:
-            pass
-
-        def generate(
-            self, question: str, retrieved_sources: list[Chunk]
-        ) -> StudentSearchResultsAndAnswer:
-            return response
-
-    monkeypatch.setattr(cli_module, "Retriever", FakeRetriever)
-    monkeypatch.setattr(cli_module, "LLM", FakeLLM)
-    monkeypatch.setattr(cli_module, "Generation", FakeGeneration)
-    output_path = tmp_path / "nested" / "answer.json"
-
-    CLI().answer("What does answer return?", k=1, output_path=str(output_path))
-
-    output = json.loads(output_path.read_text(encoding="utf-8"))
-    assert output["search_results"][0]["answer"] == "It returns 42."
+    assert "It returns 42." in captured.out
+    assert "Time: 5.38 seconds" in captured.out
 
 
 def test_prompt_includes_system_instructions_and_context() -> None:

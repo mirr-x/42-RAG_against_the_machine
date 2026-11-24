@@ -54,10 +54,12 @@ class ASTCodeChunker:
     def _travers_nested_definitions(
         node: ast.AST
             ) -> Iterator[DEFINITION_NODE]:
-        """ Iterate over nested definitions within a node. """
-        for child in ast.walk(node):
-            if child is not node and isinstance(child, DEFINITION_TYPES):
+        """Yield nested definitions without descending into each definition."""
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, DEFINITION_TYPES):
                 yield child
+            else:
+                yield from ASTCodeChunker._travers_nested_definitions(child)
 
     def _extract_signature(self, node: DEFINITION_NODE) -> str:
         """Extract decorators and the definition header."""

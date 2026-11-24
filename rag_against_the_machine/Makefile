@@ -90,6 +90,8 @@ run-moulinette_answer_code:
 run-moulinette_answer_docs:
 	./$(MOULINETTE) evaluate_student_answers $(ANSWER_RESULTS_DIR)/dataset_docs_public.json
 
+evo: prepare-datasets index run-search_dataset_code run-search_dataset_docs run-moulinette
+
 test:
 	uv run pytest
 

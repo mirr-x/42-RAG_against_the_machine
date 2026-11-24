@@ -71,7 +71,6 @@ def test_nested_function_is_chunked_with_parent_context(
     assert chunks[1].metadata.parent_context == "function outer"
 
 
-@pytest.mark.xfail(reason="Nested AST traversal currently duplicates nested methods")
 def test_nested_class_and_method_are_chunked_with_parent_context(
     tmp_path: Path,
 ) -> None:

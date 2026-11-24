@@ -85,7 +85,7 @@ class Retriever:
                 "query cannot be empty and must be between 5 and "
                 "1000 characters."
             )
-        if not isinstance(k, int) or k <= 0 or k > 25:
+        if not isinstance(k, int) or k <= 0:
             raise ValueError("k must be a positive integer.")
 
         if data_type not in (Chunk, MinimalSource):

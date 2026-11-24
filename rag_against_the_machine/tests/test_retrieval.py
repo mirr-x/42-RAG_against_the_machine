@@ -142,7 +142,7 @@ def test_query_accepts_k_larger_than_twenty_five(tmp_path: Path) -> None:
             file,
         )
 
-    results = Retriever(index_path).query("term", k=30)
+    results = Retriever(index_path).query("term10", k=30)
 
     assert len(results) == 30
 

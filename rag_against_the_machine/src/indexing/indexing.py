@@ -105,7 +105,7 @@ class Indexer:
                 chunks, desc="Tokenizing chunks", unit=" chunk", ascii="-#"
             )
         ]
-        bm25 = BM25Okapi(tokenized_documents)
+        bm25 = BM25Okapi(tokenized_documents, b=0.3)
         return {
             "version": 1,
             "algorithm": "rank-bm25",

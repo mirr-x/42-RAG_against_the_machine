@@ -27,7 +27,11 @@ def _index_documents(
 ) -> list[list[str]]:
     documents: list[list[str]] = []
 
-    def capture_documents(tokenized_documents: list[list[str]]) -> object:
+    def capture_documents(
+        tokenized_documents: list[list[str]],
+        *,
+        b: float = 0.75,
+    ) -> object:
         documents.extend(tokenized_documents)
         return object()
 

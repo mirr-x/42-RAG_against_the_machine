@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from time import perf_counter
-from typing import List
+from typing import List, Literal
 
 from src.config import (
     CHUNKS_FILE,
@@ -38,7 +38,7 @@ class CLI:
         results: List[MinimalSource] = retriver.query(
             query,
             k,
-            MinimalSource  # type: ignore[arg-type]
+            MinimalSource
         )
         for result in results:
             print(
@@ -52,6 +52,7 @@ class CLI:
         dataset_path: str,
         save_directory: str,
         k: int = 5,
+        chunk_type: Literal["code", "markdown"] | None = None,
     ) -> None:
         """ Answer questions from a dataset and save the results to a file """
         dataset_path_obj: Path = Path(dataset_path)
@@ -62,7 +63,8 @@ class CLI:
             Retriever(index_file=INDEX_FILE).query_batch(
                 dataset_path=dataset_path_obj,
                 save_directory=save_directory_obj,
-                k=k
+                k=k,
+                chunk_type=chunk_type,
             ))
 
     def answer(self, question: str, k: int = 5) -> None:
@@ -71,7 +73,7 @@ class CLI:
         sources: List[Chunk] = Retriever(index_file=INDEX_FILE).query(
             question,
             k,
-            Chunk   # type: ignore[arg-type]
+            Chunk
         )
         qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
         generation = Generation(llm=qwen_llm)

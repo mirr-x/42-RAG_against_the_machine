@@ -86,9 +86,9 @@ class CLI:
         self,
         student_search_results_path: str,
         save_directory: str,
-        k: int = 5,
+        k: int | None = None,
     ) -> None:
-        """ Answer questions from a dataset and save the results to a file """
+        """Generate answers for student search results and save them."""
         start_time = perf_counter()
         dataset_path: Path = Path(student_search_results_path)
         save_directory_path: Path = Path(save_directory)

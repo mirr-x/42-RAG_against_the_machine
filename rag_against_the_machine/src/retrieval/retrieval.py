@@ -31,6 +31,34 @@ class Retriever:
                 "Build it first with `python -m src index`."
             )
         self.bm25_index, self.chunks = self._load_index()
+        self._chunks_by_source: dict[tuple[str, int, int], Chunk] = {}
+        for chunk in self.chunks:
+            source_key = (
+                chunk.file_path,
+                chunk.first_character_index,
+                chunk.last_character_index,
+            )
+            self._chunks_by_source[source_key] = chunk
+
+    def resolve_sources(self, sources: list[MinimalSource]) -> list[Chunk]:
+        """Resolve search-result file offsets to their indexed chunks."""
+        resolved: list[Chunk] = []
+        for source in sources:
+            source_key = (
+                source.file_path,
+                source.first_character_index,
+                source.last_character_index,
+            )
+            chunk = self._chunks_by_source.get(source_key)
+c            if chunk is None:
+                raise ValueError(
+                    "Search result source does not match any indexed chunk: "
+                    f"'{source.file_path}' "
+                    f"[{source.first_character_index}:"
+                    f"{source.last_character_index}]."
+                )
+            resolved.append(chunk)
+        return resolved
 
     def _load_index(self) -> tuple[BM25Okapi, list[Chunk]]:
         """Load and validate the persisted BM25 index once per retriever."""

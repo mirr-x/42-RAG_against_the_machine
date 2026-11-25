@@ -9,7 +9,7 @@ import pytest
 from rank_bm25 import BM25Okapi
 
 from src.indexing.indexing import Indexer
-from src.models import Chunk, CodeChunk
+from src.models import Chunk, CodeChunk, MinimalSource
 from src.retrieval.retrieval import Retriever
 
 
@@ -80,6 +80,45 @@ def test_query_returns_ranked_sources_and_offsets(tmp_path: Path) -> None:
         "first_character_index": 10,
         "last_character_index": 20,
     }
+
+
+def test_resolve_sources_maps_search_offsets_to_chunks(
+    tmp_path: Path,
+) -> None:
+    index_path = tmp_path / "bm25.pkl"
+    _write_index(index_path)
+
+    chunks = Retriever(index_path).resolve_sources(
+        [
+            MinimalSource(
+                file_path="vllm/one.py",
+                first_character_index=10,
+                last_character_index=20,
+            )
+        ]
+    )
+
+    assert len(chunks) == 1
+    assert chunks[0].id == "one"
+    assert chunks[0].content == "alpha beta"
+
+
+def test_resolve_sources_rejects_unknown_search_offsets(
+    tmp_path: Path,
+) -> None:
+    index_path = tmp_path / "bm25.pkl"
+    _write_index(index_path)
+
+    with pytest.raises(ValueError, match="does not match any indexed chunk"):
+        Retriever(index_path).resolve_sources(
+            [
+                MinimalSource(
+                    file_path="vllm/missing.py",
+                    first_character_index=0,
+                    last_character_index=10,
+                )
+            ]
+        )
 
 
 @pytest.mark.parametrize(

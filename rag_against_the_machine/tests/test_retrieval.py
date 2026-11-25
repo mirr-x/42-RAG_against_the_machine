@@ -9,7 +9,7 @@ import pytest
 from rank_bm25 import BM25Okapi
 
 from src.indexing.indexing import Indexer
-from src.models import Chunk, CodeChunk, MinimalSource
+from src.models import Chunk, CodeChunk, MarkdownChunk, MinimalSource
 from src.retrieval.retrieval import Retriever
 
 
@@ -59,13 +59,54 @@ def _write_index(path: Path) -> None:
     with path.open("wb") as file:
         pickle.dump(
             {
-                "version": 1,
+                "version": 2,
                 "algorithm": "rank-bm25",
-                "bm25": BM25Okapi(tokenized_chunks),
-                "chunks": chunks,
+                "bm25_by_type": {"code": BM25Okapi(tokenized_chunks)},
+                "chunks_by_type": {"code": chunks},
             },
             file,
         )
+
+
+def _write_typed_index(path: Path) -> None:
+    chunks = [
+        Chunk(
+            id="code",
+            content="codeonly",
+            file_path="vllm/code.py",
+            chunk_type="code",
+            first_character_index=0,
+            last_character_index=7,
+            metadata=CodeChunk(
+                name="code_function",
+                type="function",
+                signature="def code_function()",
+            ),
+        ),
+        Chunk(
+            id="markdown",
+            content="docsneedle",
+            file_path="docs/guide.md",
+            chunk_type="markdown",
+            first_character_index=0,
+            last_character_index=9,
+            metadata=MarkdownChunk(
+                title="Guide",
+                level=1,
+                start_line=1,
+                end_line=1,
+            ),
+        ),
+    ]
+    index = Indexer(
+        project_root=path.parent,
+        corpus_docs_root=path.parent,
+        corpus_code_root=path.parent,
+        chunks_file=path.parent / "chunks.jsonl",
+        index_file=path,
+    )._build_bm25(chunks)
+    with path.open("wb") as file:
+        pickle.dump(index, file)
 
 
 def test_query_returns_ranked_sources_and_offsets(tmp_path: Path) -> None:
@@ -80,6 +121,57 @@ def test_query_returns_ranked_sources_and_offsets(tmp_path: Path) -> None:
         "first_character_index": 10,
         "last_character_index": 20,
     }
+
+
+def test_query_can_restrict_results_to_code_or_markdown(
+    tmp_path: Path,
+) -> None:
+    index_path = tmp_path / "typed-index.pkl"
+    _write_typed_index(index_path)
+    retriever = Retriever(index_path)
+
+    code_results = retriever.query(
+        "docsneedle",
+        k=1,
+        chunk_type="code",
+    )
+    markdown_results = retriever.query(
+        "codeonly",
+        k=1,
+        chunk_type="markdown",
+    )
+
+    assert code_results[0].file_path == "vllm/code.py"
+    assert markdown_results[0].file_path == "docs/guide.md"
+
+
+def test_unfiltered_query_merges_typed_indexes(tmp_path: Path) -> None:
+    index_path = tmp_path / "typed-index.pkl"
+    _write_typed_index(index_path)
+
+    results = Retriever(index_path).query("codeonly docsneedle", k=2)
+
+    assert {result.file_path for result in results} == {
+        "vllm/code.py",
+        "docs/guide.md",
+    }
+
+
+def test_typed_index_loading_does_not_revalidate_chunks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    index_path = tmp_path / "typed-index.pkl"
+    _write_typed_index(index_path)
+
+    def reject_validation(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Persisted chunks should be loaded directly.")
+
+    monkeypatch.setattr(Chunk, "model_validate", reject_validation)
+
+    retriever = Retriever(index_path)
+
+    assert len(retriever.chunks) == 2
 
 
 def test_resolve_sources_maps_search_offsets_to_chunks(
@@ -173,10 +265,10 @@ def test_query_accepts_k_larger_than_twenty_five(tmp_path: Path) -> None:
     with index_path.open("wb") as file:
         pickle.dump(
             {
-                "version": 1,
+                "version": 2,
                 "algorithm": "rank-bm25",
-                "bm25": BM25Okapi(tokenized_chunks),
-                "chunks": chunks,
+                "bm25_by_type": {"code": BM25Okapi(tokenized_chunks)},
+                "chunks_by_type": {"code": chunks},
             },
             file,
         )

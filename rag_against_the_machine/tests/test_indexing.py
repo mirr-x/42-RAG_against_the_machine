@@ -8,11 +8,15 @@ from src.indexing.indexing import Indexer
 from src.models import Chunk, CodeChunk, MarkdownChunk
 
 
-def _chunk(content: str, metadata: CodeChunk | MarkdownChunk) -> Chunk:
+def _chunk(
+    content: str,
+    metadata: CodeChunk | MarkdownChunk,
+    file_path: str = "source",
+) -> Chunk:
     return Chunk(
         id="chunk",
         content=content,
-        file_path="source",
+        file_path=file_path,
         chunk_type="code" if isinstance(metadata, CodeChunk) else "markdown",
         first_character_index=0,
         last_character_index=len(content) - 1,
@@ -68,6 +72,7 @@ def test_bm25_document_includes_python_metadata_and_source(
 
     assert documents == [
         [
+            "source",
             "lookup_user",
             "lookup",
             "user",
@@ -81,6 +86,8 @@ def test_bm25_document_includes_python_metadata_and_source(
             "int",
             "class",
             "userstore",
+            "user",
+            "store",
             "return",
             "value",
         ]
@@ -125,3 +132,49 @@ def test_module_source_keeps_imports_searchable(
     assert "pathlib" in documents[0]
     assert "collections" in documents[0]
     assert "counter" in documents[0]
+
+
+def test_python_filename_is_searchable_with_underscores_normalized(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    chunk = _chunk(
+        "return model",
+        CodeChunk(name="run", type="function", signature="def run()"),
+        file_path="vllm/model_runner.py",
+    )
+
+    documents = _index_documents([chunk], tmp_path, monkeypatch)
+
+    assert "model_runner" in documents[0]
+    assert "modelrunner" in documents[0]
+
+
+def test_code_tokenizer_splits_camel_case_identifiers() -> None:
+    assert Indexer.tokenize(
+        "ModelRunner NIXLConnector",
+        split_camel_case=True,
+    ) == [
+        "modelrunner",
+        "model",
+        "runner",
+        "nixlconnector",
+        "nixl",
+        "connector",
+    ]
+
+
+def test_markdown_metadata_does_not_split_camel_case(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    chunk = _chunk(
+        "Overview",
+        MarkdownChunk(title="UserStore", level=1, start_line=1, end_line=1),
+    )
+
+    documents = _index_documents([chunk], tmp_path, monkeypatch)
+
+    assert "userstore" in documents[0]
+    assert "user" not in documents[0]
+    assert "store" not in documents[0]

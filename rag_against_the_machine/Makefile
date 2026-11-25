@@ -1,4 +1,4 @@
-UV := ~/.local/bin/uv
+UV := uv
 K := 10
 MAX_CHUNK_SIZE := 2000
 MAX_CONTEXT_LENGTH := 2000
@@ -10,7 +10,20 @@ MOULINETTE := $(shell if [ -x moulinette ]; then echo moulinette; elif [ -x moul
 
 help:
 	@echo "Available commands:"
-	@awk -F: '/^[[:alnum:]_-]+:/ { print "        " $$1 }' $(MAKEFILE_LIST)
+	@echo "  help"
+	@echo "  install"
+	@echo "  index"
+	@echo "  search"
+	@echo "  run-search_dataset_code"
+	@echo "  run-search_dataset_docs"
+	@echo "  run-answer"
+	@echo "  run-answer-dataset_code"
+	@echo "  run-answer-dataset_docs"
+	@echo "  run-moulinette"
+	@echo "  evo"
+	@echo "  test"
+	@echo "  lint"
+	@echo "  clean"
 
 uv:
 	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh

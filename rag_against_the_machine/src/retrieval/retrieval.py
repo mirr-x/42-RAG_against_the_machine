@@ -50,7 +50,7 @@ class Retriever:
                 source.last_character_index,
             )
             chunk = self._chunks_by_source.get(source_key)
-c            if chunk is None:
+            if chunk is None:
                 raise ValueError(
                     "Search result source does not match any indexed chunk: "
                     f"'{source.file_path}' "

@@ -16,7 +16,7 @@ help:
 	@echo "  search"
 	@echo "  run-search_dataset_code"
 	@echo "  run-search_dataset_docs"
-	@echo "  run-answer"
+	@echo "  answer"
 	@echo "  run-answer-dataset_code"
 	@echo "  run-answer-dataset_docs"
 	@echo "  run-moulinette"
@@ -57,13 +57,17 @@ search:
 	uv run python -m src search --query "what is a multimodal model?" --k $(K)
 
 run-search_dataset_code: prepare-datasets
-	uv run python -m src search_dataset --dataset_path $(DATASET_DIR)/UnansweredQuestions/dataset_code_public.json --k $(K) --save_directory $(SEARCH_RESULTS_DIR)
+	uv run python -m src search_dataset --dataset_path $(DATASET_DIR)/UnansweredQuestions/dataset_code_public.json --k $(K) --save_directory $(SEARCH_RESULTS_DIR) --chunk_type code
 
 run-search_dataset_docs: prepare-datasets
-	uv run python -m src search_dataset --dataset_path $(DATASET_DIR)/UnansweredQuestions/dataset_docs_public.json --k $(K) --save_directory $(SEARCH_RESULTS_DIR)
+	uv run python -m src search_dataset --dataset_path $(DATASET_DIR)/UnansweredQuestions/dataset_docs_public.json --k $(K) --save_directory $(SEARCH_RESULTS_DIR) --chunk_type markdown
 
-run-answer:
-	uv run python -m src answer --question "what is a multimodal model?" --k $(K)
+answer:
+	@if [ -z "$(strip $(QUESTION))" ]; then \
+		echo 'Error: QUESTION is required. Usage: make answer QUESTION="your question"' >&2; \
+		exit 2; \
+	fi
+	uv run python -m src answer --question "$(QUESTION)" --k $(K)
 
 run-answer-dataset_code:
 	uv run python -m src answer_dataset --student_search_results_path $(SEARCH_RESULTS_DIR)/dataset_code_public.json --save_directory $(ANSWER_RESULTS_DIR) --k $(K)

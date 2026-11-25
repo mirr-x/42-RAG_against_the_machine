@@ -155,10 +155,7 @@ class Retriever:
                     "after tokenization."
                 )
             scores = self.bm25_by_type[index_type].get_scores(tokenized_query)
-            candidate_count = min(k, len(scores))
-            top_indices = np.argpartition(scores, -candidate_count)[
-                -candidate_count:
-            ]
+            top_indices = np.argpartition(scores, -k)[-k:]
             top_indices_sorted = sorted(
                 top_indices,
                 key=lambda i: scores[i],
@@ -177,8 +174,7 @@ class Retriever:
                 -ranked_chunks[key],
                 key[0],
                 key[1],
-            ),
-        )[:k]
+            ),)[:k]
 
         # Return the top k results as models instead of printing them.
         top_k_results: list[MinimalSource | Chunk] = []

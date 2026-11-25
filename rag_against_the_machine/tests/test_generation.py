@@ -1,8 +1,11 @@
 """Tests for preparing retrieved chunks as generation context."""
 
+import json
+from pathlib import Path
+
 from src.generation.generation import Generation
 from src.generation.llm import LLM, SYSTEM_PROMPT
-from src.models import Chunk, CodeChunk, MarkdownChunk
+from src.models import Chunk, CodeChunk, MarkdownChunk, MinimalSource
 
 
 def _chunk(metadata: CodeChunk | MarkdownChunk) -> Chunk:
@@ -107,3 +110,71 @@ def test_generation_allows_complete_concise_answers() -> None:
     assert llm.options["max_new_tokens"] >= 64
     assert llm.options["return_full_text"] is False
     assert llm.options["do_sample"] is False
+
+
+def test_generate_batch_consumes_search_results_and_preserves_question_id(
+    tmp_path: Path,
+) -> None:
+    question_id = "question-123"
+    source = MinimalSource(
+        file_path="docs/models.md",
+        first_character_index=0,
+        last_character_index=48,
+    )
+    search_results_path = tmp_path / "search_results.json"
+    search_results_path.write_text(
+        json.dumps(
+            {
+                "k": 1,
+                "search_results": [
+                    {
+                        "question_id": question_id,
+                        "question": "What does this model support?",
+                        "retrieved_sources": [source.model_dump()],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeRetriever:
+        def resolve_sources(
+            self,
+            sources: list[MinimalSource],
+        ) -> list[Chunk]:
+            assert sources == [source]
+            return [
+                _chunk(
+                    MarkdownChunk(
+                        title="Models",
+                        level=2,
+                        start_line=4,
+                        end_line=6,
+                    )
+                )
+            ]
+
+    class FakeLLM:
+        def build_qwen_prompt(self, question: str, context: str) -> str:
+            return f"{context}\n{question}"
+
+        def pipeline(
+            self,
+            prompt: str,
+            **kwargs: object,
+        ) -> list[dict[str, str]]:
+            return [{"generated_text": "It supports multiple modalities."}]
+
+    output_path = Generation(FakeLLM()).generate_batch(
+        dataset_path=search_results_path,
+        save_directory=tmp_path / "answers",
+        retriever=FakeRetriever(),
+    )
+
+    output = json.loads(output_path.read_text(encoding="utf-8"))
+    assert output["k"] == 1
+    assert output["search_results"][0]["question_id"] == question_id
+    assert output["search_results"][0]["retrieved_sources"] == [
+        source.model_dump()
+    ]

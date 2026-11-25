@@ -2,7 +2,7 @@
 
 import sys
 import uuid
-from typing import Any, List
+from typing import Any
 from pathlib import Path
 
 
@@ -16,7 +16,7 @@ from src.models import (
     MarkdownChunk,
     MinimalAnswer,
     MinimalSource,
-    RagDataset,
+    StudentSearchResults,
     StudentSearchResultsAndAnswer,
 )
 from src.generation.llm import LLM
@@ -79,6 +79,7 @@ class Generation:
         self,
         question: str,
         retrieved_sources: list[Chunk],
+        question_id: str | None = None,
     ) -> MinimalAnswer:
         """Generate a structured, source-linked answer for one question."""
         contexts: str = self.format_chunks_for_llm_as_xml(retrieved_sources)
@@ -105,7 +106,9 @@ class Generation:
             )
 
         return MinimalAnswer(
-            question_id=str(uuid.uuid4()),
+            question_id=(
+                question_id if question_id is not None else str(uuid.uuid4())
+            ),
             question=question,
             retrieved_sources=[
                 MinimalSource(
@@ -123,12 +126,12 @@ class Generation:
         dataset_path: Path,
         save_directory: Path,
         retriever: Retriever,
-        k: int = 5,
+        k: int | None = None,
     ) -> Path:
-        """Generate answers for each question in a dataset and save  results"""
+        """Answer a student search-results file and save structured output."""
         if not dataset_path.exists():
             raise FileNotFoundError("Dataset file not found.")
-        if k <= 0:
+        if k is not None and k <= 0:
             raise ValueError("k must be a positive integer.")
 
         try:
@@ -138,10 +141,12 @@ class Generation:
                 f"Error creating saved directory: {error}"
             ) from error
 
-        # load the dataset
+        # Load retrieval results
         try:
             with dataset_path.open('r', encoding='utf-8') as file:
-                rag_dataset = RagDataset.model_validate(json.load(file))
+                search_results = StudentSearchResults.model_validate(
+                    json.load(file)
+                )
         except (
             OSError,
             UnicodeDecodeError,
@@ -152,25 +157,31 @@ class Generation:
                 f"Error loading or validating dataset file: {error}"
             ) from error
 
+        if search_results.k <= 0:
+            raise ValueError(
+                "Search results must declare a positive k value."
+            )
+        output_k = search_results.k
+        if k is not None:
+            output_k = min(k, search_results.k)  # delete me using agent
+
         results: list[MinimalAnswer] = []
         for question in tqdm(
-            rag_dataset.rag_questions,
+            search_results.search_results,
             desc="Generating answers",
             unit=" question",
         ):
-            retrieved_sources: List[Chunk] = retriever.query(
-                        question.question,
-                        k,
-                        Chunk   # type: ignore[arg-type]
-                    )
+            source_references = question.retrieved_sources[:output_k]
+            retrieved_sources = retriever.resolve_sources(source_references)
             results.append(self.generate(
                 question=question.question,
-                retrieved_sources=retrieved_sources
+                retrieved_sources=retrieved_sources,
+                question_id=question.question_id,
             ))
         try:
             output = StudentSearchResultsAndAnswer(
                 search_results=results,
-                k=k
+                k=output_k,
             )
             output_file_path = save_directory / dataset_path.name
             with output_file_path.open('w', encoding='utf-8') as f:

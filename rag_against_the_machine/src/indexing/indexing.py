@@ -11,6 +11,9 @@ from src.chunking.chuncking import Chunking
 from src.models import Chunk, CodeChunk, MarkdownChunk
 
 TOKEN_PATTERN = re.compile(r'[A-Za-z0-9_]+')
+IDENTIFIER_PART_PATTERN = re.compile(
+    r'[A-Z]+(?=[A-Z][a-z]|\b)|[A-Z]?[a-z]+|[0-9]+'
+)
 
 USELESS_WORDS = {
     "a",
@@ -58,11 +61,12 @@ class Indexer:
         self.max_chunk_size = max_chunk_size
 
     @staticmethod
-    def tokenize(text: str) -> list[str]:
+    def tokenize(text: str, split_camel_case: bool = False) -> list[str]:
         """Tokenize content by keep related words and discard useless words"""
         tokens: list[str] = []
 
-        for word in TOKEN_PATTERN.findall(text.lower()):
+        for original_word in TOKEN_PATTERN.findall(text):
+            word = original_word.lower()
             if word not in USELESS_WORDS:
                 tokens.append(word)
 
@@ -71,6 +75,17 @@ class Indexer:
                     if part and part not in USELESS_WORDS:
                         tokens.append(part)
 
+            if split_camel_case and any(
+                char.isupper() for char in original_word
+            ):
+                for part in IDENTIFIER_PART_PATTERN.findall(original_word):
+                    normalized_part = part.lower()
+                    if (
+                        normalized_part != word
+                        and normalized_part not in USELESS_WORDS
+                    ):
+                        tokens.append(normalized_part)
+
         return tokens
 
     @staticmethod
@@ -78,7 +93,10 @@ class Indexer:
         """Include searchable metadata alongside each chunk's source text."""
         metadata = chunk.metadata
         if isinstance(metadata, CodeChunk):
+            filename = Path(chunk.file_path).stem
             fields = [
+                filename,
+                filename.replace("_", "") if "_" in filename else "",
                 metadata.name,
                 metadata.signature,
                 metadata.parent_context or "",
@@ -97,20 +115,52 @@ class Indexer:
         return " ".join(field for field in fields if field)
 
     def _build_bm25(self, chunks: list[Chunk]) -> dict[str, object]:
-        """Build a ready-to-search BM25 index with ``rank-bm25``."""
-        print('')
-        tokenized_documents = [
-            self.tokenize(self._index_document(chunk))
-            for chunk in tqdm(
-                chunks, desc="Tokenizing chunks", unit=" chunk", ascii="-#"
+        """Build independent code and Markdown BM25 indexes."""
+        chunks_by_type: dict[str, list[Chunk]] = {
+            "code": [],
+            "markdown": [],
+        }
+        for chunk in chunks:
+            if isinstance(chunk.metadata, CodeChunk):
+                chunks_by_type["code"].append(chunk)
+            elif isinstance(chunk.metadata, MarkdownChunk):
+                chunks_by_type["markdown"].append(chunk)
+            else:
+                raise TypeError(
+                    "Unsupported chunk metadata type: "
+                    f"{type(chunk.metadata).__name__}."
+                )
+
+        bm25_by_type: dict[str, BM25Okapi] = {}
+        for chunk_type, typed_chunks in chunks_by_type.items():
+            if not typed_chunks:
+                continue
+            tokenized_documents = [
+                self.tokenize(
+                    self._index_document(chunk),
+                    split_camel_case=chunk_type == "code",
+                )
+                for chunk in tqdm(
+                    typed_chunks,
+                    desc=f"Tokenizing {chunk_type} chunks",
+                    unit=" chunk",
+                    ascii="-#",
+                )
+            ]
+            bm25_by_type[chunk_type] = BM25Okapi(
+                tokenized_documents,
+                b=0.3,
+                epsilon=0.5,
             )
-        ]
-        bm25 = BM25Okapi(tokenized_documents, b=0.3, epsilon=0.5)
         return {
-            "version": 1,
+            "version": 2,
             "algorithm": "rank-bm25",
-            "bm25": bm25,
-            "chunks": chunks,
+            "bm25_by_type": bm25_by_type,
+            "chunks_by_type": {
+                chunk_type: typed_chunks
+                for chunk_type, typed_chunks in chunks_by_type.items()
+                if typed_chunks
+            },
         }
 
     def _load_chunks(self) -> list[Chunk]:

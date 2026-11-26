@@ -161,20 +161,15 @@ class Retriever:
                 key=lambda i: scores[i],
                 reverse=True,
             )
-            ranked_chunks.update(
-                {
-                    (index_type, int(index)): 1.0 / (60 + rank)
-                    for rank, index in enumerate(top_indices_sorted, 1)
-                }
-            )
+            for rank, index in enumerate(top_indices_sorted, 1):
+                key = (index_type, int(index))
+                ranked_chunks[key] = 1.0 / (60 + rank)
 
         top_k_sorted = sorted(
             ranked_chunks,
-            key=lambda key: (
-                -ranked_chunks[key],
-                key[0],
-                key[1],
-            ),)[:k]
+            key=lambda key: ranked_chunks[key],
+            reverse=True
+        )[:k]
 
         # Return the top k results as models instead of printing them.
         top_k_results: list[MinimalSource | Chunk] = []

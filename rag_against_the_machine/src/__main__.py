@@ -4,23 +4,39 @@
 
 import sys
 import traceback
+
 import fire
 
 from src.cli.cli import CLI
 
 
-if __name__ == '__main__':
-
+def main() -> None:
+    """Run the Fire CLI and translate application failures."""
     try:
         fire.Fire(CLI)
-    except (FileNotFoundError, NotADirectoryError) as e:
-        print(f"Required input path unavailable: {e}", file=sys.stderr)
+    except KeyboardInterrupt:
+        print("Operation cancelled.", file=sys.stderr)
+        raise SystemExit(130) from None
+    except (FileNotFoundError, NotADirectoryError) as error:
+        print(
+            f"Required input path unavailable: {error}",
+            file=sys.stderr,
+        )
         raise SystemExit(1) from None
-    except OSError as e:
-        print(f"Input/output error: {e}", file=sys.stderr)
+    except OSError as error:
+        print(f"Input/output error: {error}", file=sys.stderr)
         raise SystemExit(1) from None
-    except ValueError as e:
-        print(f"Configuration error: {e}")
-    except Exception as e:
-        print(f"Chunking failed: {type(e).__name__}: {e}")
+    except ValueError as error:
+        print(f"Configuration error: {error}", file=sys.stderr)
+        raise SystemExit(1) from None
+    except Exception as error:
+        print(
+            f"Operation failed: {type(error).__name__}: {error}",
+            file=sys.stderr,
+        )
         traceback.print_exc()
+        raise SystemExit(1) from None
+
+
+if __name__ == "__main__":
+    main()

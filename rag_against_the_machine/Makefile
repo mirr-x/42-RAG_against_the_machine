@@ -16,7 +16,7 @@ help:
 	@echo "  search"
 	@echo "  run-search_dataset_code"
 	@echo "  run-search_dataset_docs"
-	@echo "  answer"
+	@echo "  answer [CONTEXT=code|markdown]"
 	@echo "  run-answer-dataset_code"
 	@echo "  run-answer-dataset_docs"
 	@echo "  run-moulinette"
@@ -67,7 +67,7 @@ answer:
 		echo 'Error: QUESTION is required. Usage: make answer QUESTION="your question"' >&2; \
 		exit 2; \
 	fi
-	uv run python -m src answer --question "$(QUESTION)" --k $(K)
+	uv run python -m src answer --question "$(QUESTION)" --k $(K) $(if $(strip $(CONTEXT)),--context "$(CONTEXT)",)
 
 run-answer-dataset_code:
 	uv run python -m src answer_dataset --student_search_results_path $(SEARCH_RESULTS_DIR)/dataset_code_public.json --save_directory $(ANSWER_RESULTS_DIR) --k $(K)
@@ -107,6 +107,12 @@ run-moulinette_answer_code:
 run-moulinette_answer_docs:
 	./$(MOULINETTE) evaluate_student_answers $(ANSWER_RESULTS_DIR)/dataset_docs_public.json
 
+evaluate-answers:
+	uv run python -m src evaluate \
+	--student_directory data/output/search_results_and_answer/UnansweredQuestions \
+	--reference_directory data/datasets/AnsweredQuestions \
+	--output_directory data/output/evaluation
+
 evo: prepare-datasets index run-search_dataset_code run-search_dataset_docs run-moulinette
 
 test:
@@ -122,4 +128,4 @@ clean:
 	find . -name '.mypy_cache' -exec rm -rf {} +
 
 
-.PHONY: help uv install prepare-datasets index search run-search_dataset_code run-search_dataset_docs run-answer run-answer-dataset_code run-answer-dataset_docs run-moulinette run-moulinette_code run-moulinette_docs run-moulinette_answer_code run-moulinette_answer_docs test lint clean
+.PHONY: help uv install prepare-datasets index search run-search_dataset_code run-search_dataset_docs run-answer run-answer-dataset_code run-answer-dataset_docs run-moulinette run-moulinette_code run-moulinette_docs run-moulinette_answer_code run-moulinette_answer_docs evaluate-answers test lint clean

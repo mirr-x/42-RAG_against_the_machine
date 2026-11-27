@@ -74,14 +74,20 @@ def test_generation_returns_validated_answer_with_sources() -> None:
 def test_answer_prints_generated_answer(monkeypatch, capsys) -> None:
     response = _response()
     clock_values = iter([10.0, 15.375])
+    query_contexts: list[str | None] = []
 
     class FakeRetriever:
         def __init__(self, index_file: Path) -> None:
             pass
 
         def query(
-            self, question: str, k: int, data_type: type[Chunk]
+            self,
+            question: str,
+            k: int,
+            data_type: type[Chunk],
+            chunk_type: str | None = None,
         ) -> list[Chunk]:
+            query_contexts.append(chunk_type)
             return [_chunk()]
 
     class FakeLLM:
@@ -111,6 +117,7 @@ def test_answer_prints_generated_answer(monkeypatch, capsys) -> None:
     captured = capsys.readouterr()
     assert "It returns 42." in captured.out
     assert "Time: 5.38 seconds" in captured.out
+    assert query_contexts == [None]
 
 
 def test_prompt_includes_system_instructions_and_context() -> None:

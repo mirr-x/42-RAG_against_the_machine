@@ -37,7 +37,9 @@ def _index_documents(
         b: float = 0.75,
         epsilon: float = 0.25,
     ) -> object:
-        documents.extend(tokenized_documents)
+        del b, epsilon
+        if len(documents) == 0:
+            documents.extend(tokenized_documents)
         return object()
 
     monkeypatch.setattr(

@@ -59,10 +59,12 @@ def _write_index(path: Path) -> None:
     with path.open("wb") as file:
         pickle.dump(
             {
-                "version": 2,
+                "version": 3,
                 "algorithm": "rank-bm25",
                 "bm25_by_type": {"code": BM25Okapi(tokenized_chunks)},
                 "chunks_by_type": {"code": chunks},
+                "bm25_all": BM25Okapi(tokenized_chunks),
+                "chunks_all": chunks,
             },
             file,
         )
@@ -265,10 +267,12 @@ def test_query_accepts_k_larger_than_twenty_five(tmp_path: Path) -> None:
     with index_path.open("wb") as file:
         pickle.dump(
             {
-                "version": 2,
+                "version": 3,
                 "algorithm": "rank-bm25",
                 "bm25_by_type": {"code": BM25Okapi(tokenized_chunks)},
                 "chunks_by_type": {"code": chunks},
+                "bm25_all": BM25Okapi(tokenized_chunks),
+                "chunks_all": chunks,
             },
             file,
         )
@@ -307,8 +311,8 @@ def test_query_batch_preserves_ids_and_saves_json(tmp_path: Path) -> None:
     assert result_path.name == dataset_path.name
     assert output["k"] == 1
     assert output["search_results"][0]["question_id"] == question_id
-    assert output["search_results"][0]["retrieved_sources"][0]["file_path"] == (
-        "vllm/one.py"
-    )
+    assert output["search_results"][0]["retrieved_sources"][0][
+        "file_path"
+    ] == "vllm/one.py"
 
 

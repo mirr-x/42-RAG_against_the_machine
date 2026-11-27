@@ -115,7 +115,7 @@ class Indexer:
         return " ".join(field for field in fields if field)
 
     def _build_bm25(self, chunks: list[Chunk]) -> dict[str, object]:
-        """Build independent code and Markdown BM25 indexes."""
+        """Build typed BM25 indexes and a unified fallback index."""
         chunks_by_type: dict[str, list[Chunk]] = {
             "code": [],
             "markdown": [],
@@ -152,8 +152,28 @@ class Indexer:
                 b=0.3,
                 epsilon=0.5,
             )
+
+        unified_chunks = chunks
+        unified_documents = [
+            self.tokenize(
+                self._index_document(chunk),
+                split_camel_case=True,
+            )
+            for chunk in tqdm(
+                unified_chunks,
+                desc="Tokenizing unified chunks",
+                unit=" chunk",
+                ascii="-#",
+            )
+        ]
+        bm25_all = BM25Okapi(
+            unified_documents,
+            b=0.3,
+            epsilon=0.5,
+        )
+
         return {
-            "version": 2,
+            "version": 3,
             "algorithm": "rank-bm25",
             "bm25_by_type": bm25_by_type,
             "chunks_by_type": {
@@ -161,6 +181,8 @@ class Indexer:
                 for chunk_type, typed_chunks in chunks_by_type.items()
                 if typed_chunks
             },
+            "bm25_all": bm25_all,
+            "chunks_all": unified_chunks,
         }
 
     def _load_chunks(self) -> list[Chunk]:

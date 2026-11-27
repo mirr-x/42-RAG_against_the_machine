@@ -89,7 +89,7 @@ class Indexer:
         return tokens
 
     @staticmethod
-    def _index_document(chunk: Chunk) -> str:
+    def build_search_document(chunk: Chunk) -> str:
         """Include searchable metadata alongside each chunk's source text."""
         metadata = chunk.metadata
         if isinstance(metadata, CodeChunk):
@@ -137,7 +137,7 @@ class Indexer:
                 continue
             tokenized_documents = [
                 self.tokenize(
-                    self._index_document(chunk),
+                    self.build_search_document(chunk),
                     split_camel_case=chunk_type == "code",
                 )
                 for chunk in tqdm(
@@ -156,7 +156,7 @@ class Indexer:
         unified_chunks = chunks
         unified_documents = [
             self.tokenize(
-                self._index_document(chunk),
+                self.build_search_document(chunk),
                 split_camel_case=True,
             )
             for chunk in tqdm(

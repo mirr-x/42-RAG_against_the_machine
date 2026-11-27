@@ -81,6 +81,12 @@ class CLI:
             Chunk,
             chunk_type=context
         )
+        for source in sources:
+            print(
+                f'{source.file_path} '
+                f'[{source.first_character_index}:'
+                f'{source.last_character_index}]\n'
+            )
         qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
         generation = Generation(llm=qwen_llm)
         answer = generation.generate(

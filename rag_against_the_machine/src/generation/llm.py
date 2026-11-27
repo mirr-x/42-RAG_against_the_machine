@@ -8,14 +8,13 @@ SYSTEM_PROMPT: str = (
     "You are a precise vLLM codebase assistant. Answer the user's question "
     "using ONLY the provided sources.\n"
     "Rules:\n"
-    "1. Rely strictly on the facts in the sources. Do not guess or use "
-    "outside knowledge.\n"
-    "2. If the sources do not contain the answer, reply ONLY with: "
-    '"I cannot find the answer in the provided sources."\n'
-    "3. Cite the snippet number in brackets immediately after every fact "
-    "(e.g., [1], [2]).\n"
-    "4. Answer in one concise, complete sentence and avoid filler.\n"
-    "5. Keep the answer factual."
+    "1. Extract the exact fact or complete list requested by the question.\n"
+    "2. Preserve exact names, values, booleans, commands, symbols, "
+    "and counts.\n"
+    "3. Do not guess, add outside knowledge, or contradict the sources.\n"
+    "4. If the sources do not contain enough supported evidence, reply "
+    "ONLY with: \"I cannot find the answer in the provided sources.\"\n"
+    "5. Answer directly and completely. Do not add filler or citations.\n"
 )
 
 
@@ -50,8 +49,12 @@ class LLM:
             {
                 "role": "user",
                 "content": (
-                    f"Retrieved sources:\n{retrieved_sources}\n\n"
-                    f"Question: {question}"
+                    "Question:\n"
+                    f"{question}\n\n"
+                    "Retrieved evidence:\n"
+                    f"{retrieved_sources}\n\n"
+                    "Answer the question directly using only the evidence "
+                    "above."
                 ),
             },
         ]

@@ -30,7 +30,12 @@ class Retriever:
                 f"Index file not found: '{self.index_file}'. "
                 "Build it first with `python -m src index`."
             )
-        self.bm25_by_type, self.chunks_by_type = self._load_index()
+        (
+            self.bm25_by_type,
+            self.chunks_by_type,
+            self.bm25_all,
+            self.chunks_all,
+        ) = self._load_index()
         self.chunks = [
             chunk
             for typed_chunks in self.chunks_by_type.values()
@@ -67,11 +72,19 @@ class Retriever:
 
     def _load_index(
         self,
-    ) -> tuple[dict[str, BM25Okapi], dict[str, list[Chunk]]]:
-        """Load and validate the persisted BM25 index once per retriever."""
+    ) -> tuple[
+        dict[str, BM25Okapi],
+        dict[str, list[Chunk]],
+        BM25Okapi,
+        list[Chunk],
+    ]:
+        """Load and validate all BM25 indexes once per retriever."""
         try:
-            with self.index_file.open('rb') as index_file:
+            with self.index_file.open("rb") as index_file:
                 persisted_index = pickle.load(index_file)
+            if not isinstance(persisted_index, dict):
+                raise TypeError("Persisted index must be a dictionary.")
+
             bm25_by_type = persisted_index["bm25_by_type"]
             chunks_by_type = persisted_index["chunks_by_type"]
             if (
@@ -83,6 +96,30 @@ class Retriever:
                 raise TypeError(
                     "Persisted typed index has invalid collections."
                 )
+
+            bm25_all = persisted_index.get("bm25_all")
+            chunks_all = persisted_index.get("chunks_all")
+            if not isinstance(bm25_all, BM25Okapi):
+                raise TypeError(
+                    "Persisted index is missing the unified BM25 index. "
+                    "Rebuild it with `make index`."
+                )
+            if not isinstance(chunks_all, list):
+                raise TypeError(
+                    "Persisted index is missing the unified chunk list. "
+                    "Rebuild it with `make index`."
+                )
+            if bm25_all.corpus_size != len(chunks_all):
+                raise TypeError(
+                    "Unified BM25 corpus and chunk list have mismatched sizes. "
+                    "Rebuild it with `make index`."
+                )
+            return (
+                bm25_by_type,
+                chunks_by_type,
+                bm25_all,
+                chunks_all,
+            )
         except (
             EOFError,
             KeyError,
@@ -94,7 +131,6 @@ class Retriever:
             raise ValueError(
                 f"Error loading index file '{self.index_file}': {error}"
             ) from error
-        return bm25_by_type, chunks_by_type
 
     def query(
         self,
@@ -134,17 +170,35 @@ class Retriever:
                     f"No {chunk_type} chunks are available in the index."
                 )
             selected_types = [chunk_type]
+            selected_count = len(self.chunks_by_type[chunk_type])
         else:
-            selected_types = list(self.bm25_by_type)
-        selected_count = sum(
-            len(self.chunks_by_type[index_type])
-            for index_type in selected_types
-        )
+            selected_types = []
+            selected_count = len(self.chunks_all)
         if k > selected_count:
             raise ValueError("k cannot be greater than the number of chunks.")
 
-        ranked_chunks: dict[tuple[str, int], float] = {}
-        for index_type in selected_types:
+        if chunk_type is None:
+            tokenized_query = Indexer.tokenize(
+                query,
+                split_camel_case=True,
+            )
+            if not tokenized_query:
+                raise ValueError(
+                    "Query string must contain at least one valid token "
+                    "after tokenization."
+                )
+            scores = self.bm25_all.get_scores(tokenized_query)
+            top_indices = np.argpartition(scores, -k)[-k:]
+            top_indices_sorted = sorted(
+                top_indices,
+                key=lambda i: float(scores[i]),
+                reverse=True,
+            )
+            top_k_sorted = [
+                ("all", int(index)) for index in top_indices_sorted
+            ]
+        else:
+            index_type = selected_types[0]
             tokenized_query = Indexer.tokenize(
                 query,
                 split_camel_case=index_type == "code",
@@ -154,35 +208,26 @@ class Retriever:
                     "Query string must contain at least one valid token "
                     "after tokenization."
                 )
-            scores = self.bm25_by_type[index_type].get_scores(tokenized_query)
+            scores = self.bm25_by_type[index_type].get_scores(
+                tokenized_query
+            )
             top_indices = np.argpartition(scores, -k)[-k:]
             top_indices_sorted = sorted(
                 top_indices,
-                key=lambda i: scores[i],
+                key=lambda i: float(scores[int(i)]),
                 reverse=True,
             )
-            for rank, index in enumerate(top_indices_sorted, 1):
-                key = (index_type, int(index))
-                ranked_chunks[key] = 1.0 / (60 + rank)
+            top_k_sorted = [
+                (index_type, int(index))
+                for index in top_indices_sorted
+            ]
 
-        top_k_sorted = sorted(
-            ranked_chunks,
-            key=lambda key: ranked_chunks[key],
-            reverse=True
-        )[:k]
-
-        # Return the top k results as models instead of printing them.
         top_k_results: list[MinimalSource | Chunk] = []
         for index_type, index in top_k_sorted:
-            chunk = self.chunks_by_type[index_type][index]
-            if chunk.last_character_index < chunk.first_character_index:
-                raise ValueError(
-                    "Chunk end index cannot precede its start index.")
-            if (
-                chunk.last_character_index - chunk.first_character_index + 1
-                > 2000
-            ):
-                raise ValueError("Chunk width cannot exceed 2,000 characters.")
+            if index_type == "all":
+                chunk = self.chunks_all[index]
+            else:
+                chunk = self.chunks_by_type[index_type][index]
 
             if data_type == Chunk:
                 top_k_results.append(Chunk.model_validate(chunk))

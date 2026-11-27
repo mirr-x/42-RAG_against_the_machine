@@ -67,13 +67,19 @@ class CLI:
                 chunk_type=chunk_type,
             ))
 
-    def answer(self, question: str, k: int = 5) -> None:
+    def answer(
+        self,
+        question: str,
+        k: int = 5,
+        context: Literal["code", "markdown"] | None = None
+    ) -> None:
         """ Answer a question using the RAG system """
         start_time = perf_counter()
         sources: List[Chunk] = Retriever(index_file=INDEX_FILE).query(
             question,
             k,
-            Chunk
+            Chunk,
+            chunk_type=context
         )
         qwen_llm = LLM(model_name="Qwen/Qwen3-0.6B")
         generation = Generation(llm=qwen_llm)

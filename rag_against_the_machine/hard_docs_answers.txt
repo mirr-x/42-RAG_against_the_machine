@@ -1,0 +1,121 @@
+    {
+      "question_id": "3f4ce35c-5c00-4b7f-8781-d292056ba4fb",
+      "question": "Can vLLM serve multiple models on a single port using the OpenAI API?",
+      "answer": "No, vLLM does not currently support serving multiple models on a single port using the OpenAI compatible server. You need to run multiple server instances (each serving a different model) and use another layer to route requests to the correct server.",
+      "sources": [
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/usage/faq.md",
+          "first_character_index": 0,
+          "last_character_index": 1564
+        }
+      ],
+      "difficulty": "synthetic",
+      "is_valid": true
+    },
+
+    {
+      "question_id": "070dd694-1d93-473d-8d04-3ac50689b023",
+      "question": "How do you add support for a new reasoning model in vLLM?",
+      "answer": "You can add a new `ReasoningParser` similar to the DeepSeek R1 reasoning parser by creating a class that inherits from `ReasoningParser` and registering it with the `ReasoningParserManager` using the `@ReasoningParserManager.register_module()` decorator. The class must implement the `extract_reasoning_content_streaming()` and `extract_reasoning_content()` methods for handling streaming and non-streaming responses respectively.",
+      "sources": [
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/reasoning_outputs.md",
+          "first_character_index": 8174,
+          "last_character_index": 10067
+        }
+      ],
+      "difficulty": "synthetic",
+      "is_valid": true
+    },
+
+        {
+          "question_id": "de2f7646-a182-4d9b-8fb0-b9edf7ce47e9",
+          "question": "What is Reinforcement Learning from Human Feedback (RLHF)?",
+          "answer": "RLHF is a technique that fine-tunes language models using human-generated preference data to align model outputs with desired behaviors. vLLM can be used to generate completions for RLHF through libraries like TRL, OpenRLHF, verl, and unsloth.",
+          "sources": [
+            {
+              "file_path": "data/raw/vllm-0.10.1/docs/training/rlhf.md",
+              "first_character_index": 0,
+              "last_character_index": 1162
+            }
+          ],
+          "difficulty": "synthetic",
+          "is_valid": true
+        },
+    
+{
+      "question_id": "43914555-ab14-430a-8092-544eba3a30fd",
+      "question": "What resources are available for vLLM contributors working on speculative decoding?",
+      "answer": "vLLM provides several resources for contributors working on speculative decoding, including \"A Hacker's Guide to Speculative Decoding in vLLM\" video, documentation on Lookahead Scheduling, information on batch expansion, and details about dynamic speculative decoding (issue #4565).",
+      "sources": [
+        {
+          "file_path": "data/raw/vllm-0.10.1/docs/features/spec_decode.md",
+          "first_character_index": 13289,
+          "last_character_index": 13765
+        }
+      ],
+      "difficulty": "synthetic",
+      "is_valid": true
+    },
+     {
+          "question_id": "5521313f-eae6-431d-9ff4-f3cc31698bfa",
+          "question": "What should you do if you encounter persistent or strange build errors in vLLM after significant changes or switching branches?",
+          "answer": "Remove the CMake build directory (e.g., `rm -rf cmake-build-release`) and re-run the `cmake --preset` and `cmake --build` commands. This clean build approach helps resolve build issues that may occur during vLLM's incremental build process.",
+          "sources": [
+            {
+              "file_path": "data/raw/vllm-0.10.1/docs/contributing/incremental_build.md",
+              "first_character_index": 7404,
+              "last_character_index": 8351
+            }
+          ],
+          "difficulty": "synthetic",
+          "is_valid": true
+        },
+
+
+        (rag-against-the-machine) mirr@192:~/Desktop/42-curses/42-RAG_against_the_machine/rag_against_the_machine$ make answer QUESTION="Can vLLM serve multiple models on a single port using the OpenAI API?" K=1 CONTEXT="markdown"
+uv run python -m src answer --question "Can vLLM serve multiple models on a single port using the OpenAI API?" --k 1 --context "markdown"
+data/raw/vllm-0.10.1/docs/usage/faq.md [0:1565]
+
+Loading weights: 100%|████████████████████████████████████████████████████████████████████████████████████████| 311/311 [00:00<00:00, 1255.39it/s]
+Generating the answer on CPU; this may take a few minutes...
+Yes, vLLM can serve multiple models on a single port using the OpenAI API.
+Time: 20.30 seconds
+(rag-against-the-machine) mirr@192:~/Desktop/42-curses/42-RAG_against_the_machine/rag_against_the_machine$ make answer QUESTION="How do you add support for a new reasoning model in vLLM?" K=1 CONTEXT="markdown"
+uv run python -m src answer --question "How do you add support for a new reasoning model in vLLM?" --k 1 --context "markdown"
+data/raw/vllm-0.10.1/docs/features/reasoning_outputs.md [8174:10068]
+
+Loading weights: 100%|████████████████████████████████████████████████████████████████████████████████████████| 311/311 [00:00<00:00, 3485.73it/s]
+Generating the answer on CPU; this may take a few minutes...
+You can add support for a new reasoning model by defining a `ReasoningParser` class and registering it with the `ReasoningParserManager` in the vLLM codebase.
+Time: 21.82 seconds
+(rag-against-the-machine) mirr@192:~/Desktop/42-curses/42-RAG_against_the_machine/rag_against_the_machine$ make answer QUESTION="What is Reinforcement Learning from Human Feedback (RLHF)?" K=1 CONTEXT="markdown"
+uv run python -m src answer --question "What is Reinforcement Learning from Human Feedback (RLHF)?" --k 1 --context "markdown"
+data/raw/vllm-0.10.1/docs/training/rlhf.md [0:1162]
+
+Loading weights: 100%|██████████████████| 311/311 [00:03<00:00, 86.88it/s]
+Generating the answer on CPU; this may take a few minutes...
+Reinforcement Learning from Human Feedback (RLHF) is a technique that fine-tunes language models using human-generated preference data to align model outputs with desired behaviors.
+Time: 22.56 seconds
+
+(rag-against-the-machine) mirr@192:~/Desktop/42-curses/42-RAG_against_the_machine/rag_against_the_machine$ make answer QUESTION="What should you do if you encounter persistent or strange build errors in vLLM after significant changes or switching branches?" K=1 CONTEXT="markdown"
+uv run python -m src answer --question "What should you do if you encounter persistent or strange build errors in vLLM after significant changes or switching branches?" --k 1 --context "markdown"
+data/raw/vllm-0.10.1/docs/contributing/incremental_build.md [7404:8351]
+
+Loading weights: 100%|████████████████████████████████████████████████████████████████████████████████████████| 311/311 [00:00<00:00, 6577.76it/s]
+Generating the answer on CPU; this may take a few minutes...
+If you encounter persistent or strange build errors in vLLM after significant changes or switching branches, consider removing the CMake build directory and re-running the `cmake --preset` and `cmake --build` commands.
+Time: 14.27 seconds
+(rag-against-the-machine) mirr@192:~/Desktop/42-curses/42-RAG_against_the_machine/rag_against_the_machine$
+e_machine/rag_against_the_machine$
+
+
+(rag-against-the-machine) mirr@192:~/Desktop/42-curses/42-RAG_against_the_machine/rag_against_the_machine$ make answer QUESTION="What resources are available for vLLM contributors working on speculative decoding?" K=1 CONTEXT="markdown"
+uv run python -m src answer --question "What resources are available for vLLM contributors working on speculative decoding?" --k 1 --context "markdown"
+data/raw/vllm-0.10.1/docs/features/spec_decode.md [13289:13765]
+
+Loading weights: 100%|████████████████████████████████████████████████████████████████████████████████████████| 311/311 [00:00<00:00, 1361.91it/s]
+Generating the answer on CPU; this may take a few minutes...
+The resources available for vLLM contributors working on speculative decoding are listed in the provided sources.
+Time: 12.19 seconds
+(rag-against-the-machine) mirr@192:~/Desktop/42-curses/42-RAG_against_the_machine/rag_against_the_machine$ 

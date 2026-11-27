@@ -178,3 +178,16 @@ def test_generate_batch_consumes_search_results_and_preserves_question_id(
     assert output["search_results"][0]["retrieved_sources"] == [
         source.model_dump()
     ]
+
+
+def test_clean_generated_answer_removes_unavailable_suffix() -> None:
+    complete_answer = (
+        "A Hacker's Guide to Speculative Decoding in vLLM, "
+        "Lookahead Scheduling, and batch expansion."
+    )
+    generated = (
+        complete_answer
+        + "\nI cannot find the answer in the provided sources."
+    )
+
+    assert Generation.clean_generated_answer(generated) == complete_answer

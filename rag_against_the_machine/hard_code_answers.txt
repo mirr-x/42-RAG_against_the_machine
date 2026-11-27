@@ -1,0 +1,200 @@
+
+=== Question 1 ===
+What conditions must be met for vLLM's ModelRunner to use CUDA graphs instead of the regular model?
+=== Answer ===
+uv run python -m src answer --question "What conditions must be met for vLLM's ModelRunner to use CUDA graphs instead of the regular model?" --k 5 --context "code"
+data/raw/vllm-0.10.1/vllm/compilation/counter.py [228:1127]
+
+data/raw/vllm-0.10.1/vllm/worker/model_runner.py [82821:83753]
+
+data/raw/vllm-0.10.1/vllm/worker/model_runner.py [83755:84680]
+
+data/raw/vllm-0.10.1/vllm/worker/model_runner.py [33057:35052]
+
+data/raw/vllm-0.10.1/vllm/worker/model_runner.py [59990:61952]
+
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 6873.15it/s]
+Generating the answer on CPU; this may take a few minutes...
+For vLLM's ModelRunner to use CUDA graphs instead of the regular model, the current run must be a prefill run, the model is not in eager mode, and the batch size is not a profiling run.
+Time: 43.75 seconds
+
+
+=== Question 2 ===
+What prevents tensors from moving to the device in the FlashInfer prepare method?
+=== Answer ===
+uv run python -m src answer --question "What prevents tensors from moving to the device in the FlashInfer prepare method?" --k 5 --context "code"
+data/raw/vllm-0.10.1/vllm/attention/backends/flashinfer.py [14779:15407]
+
+data/raw/vllm-0.10.1/vllm/model_executor/layers/quantization/utils/flashinfer_fp4_moe.py [107:877]
+
+data/raw/vllm-0.10.1/vllm/model_executor/layers/quantization/utils/flashinfer_fp4_moe.py [1836:2180]
+
+data/raw/vllm-0.10.1/vllm/model_executor/layers/fused_moe/flashinfer_cutlass_prepare_finalize.py [642:719]
+
+data/raw/vllm-0.10.1/vllm/attention/backends/flashinfer.py [18746:19794]
+
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 6801.16it/s]
+Generating the answer on CPU; this may take a few minutes...
+The tensors are prevented from moving to the device in the FlashInfer prepare method because they are copied from the host to the device during the preparation phase.
+Time: 21.41 seconds
+
+
+=== Question 3 ===
+What determines whether custom allreduce is enabled in CudaCommunicator?
+=== Answer ===
+uv run python -m src answer --question "What determines whether custom allreduce is enabled in CudaCommunicator?" --k 5 --context "code"
+data/raw/vllm-0.10.1/vllm/distributed/device_communicators/cuda_communicator.py [451:2402]
+
+data/raw/vllm-0.10.1/vllm/distributed/device_communicators/cuda_communicator.py [3945:5140]
+
+data/raw/vllm-0.10.1/vllm/distributed/device_communicators/cuda_communicator.py [402:450]
+
+data/raw/vllm-0.10.1/vllm/distributed/device_communicators/quick_all_reduce.py [1695:3628]
+
+data/raw/vllm-0.10.1/vllm/distributed/device_communicators/cuda_communicator.py [2403:3943]
+
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 10315.36it/s]
+Generating the answer on CPU; this may take a few minutes...
+The use of custom allreduce is determined by the presence of the 'tp' parameter in the unique name, which enables it only if the 'tp' parameter is present.
+Time: 28.01 seconds
+
+
+=== Question 4 ===
+What conditions must be met for `use_aiter_and_is_supported` to be true?
+=== Answer ===
+/bin/sh: line 1: use_aiter_and_is_supported: command not found
+uv run python -m src answer --question "What conditions must be met for `use_aiter_and_is_supported` to be true?" --k 5 --context "code"
+/bin/sh: line 1: use_aiter_and_is_supported: command not found
+data/raw/vllm-0.10.1/vllm/benchmarks/datasets.py [7959:8964]
+
+data/raw/vllm-0.10.1/vllm/benchmarks/datasets.py [29800:31268]
+
+data/raw/vllm-0.10.1/vllm/entrypoints/openai/protocol.py [72767:74765]
+
+data/raw/vllm-0.10.1/vllm/distributed/kv_transfer/kv_connector/v1/base.py [8099:8990]
+
+data/raw/vllm-0.10.1/vllm/entrypoints/openai/tool_parsers/utils.py [1585:2805]
+
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 11035.21it/s]
+Generating the answer on CPU; this may take a few minutes...
+The conditions for "to be true" are that none of the invalid conditions related to prompt and output lengths are met.
+Time: 27.76 seconds
+
+
+=== Question 5 ===
+What is FalconForCausalLM's default `tie_word_embeddings` value?
+=== Answer ===
+/bin/sh: line 1: tie_word_embeddings: command not found
+uv run python -m src answer --question "What is FalconForCausalLM's default `tie_word_embeddings` value?" --k 5 --context "code"
+/bin/sh: line 1: tie_word_embeddings: command not found
+data/raw/vllm-0.10.1/vllm/model_executor/models/falcon.py [18712:18759]
+
+data/raw/vllm-0.10.1/vllm/model_executor/models/falcon.py [18760:18844]
+
+data/raw/vllm-0.10.1/vllm/model_executor/models/registry.py [2094:4048]
+
+data/raw/vllm-0.10.1/vllm/model_executor/models/falcon.py [18846:20162]
+
+data/raw/vllm-0.10.1/vllm/model_executor/models/registry.py [6043:8022]
+
+
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 8239.50it/s]
+Generating the answer on CPU; this may take a few minutes...
+The default value for FalconForCausalLM is set to `True` by default.
+Time: 62.82 seconds
+
+
+
+```json
+{
+  "question_id": "6ffdf5f6-fcd3-4d11-8227-8bedd9b33296",
+  "question": "What conditions must be met for vLLM's ModelRunner to use CUDA graphs instead of the regular model?",
+  "answer": "Two conditions must be met: `prefill_meta` must be `None` and `decode_meta.use_cuda_graph` must be `True`. When both conditions are satisfied, the ModelRunner uses `self.graph_runners[virtual_engine]` instead of `self.model`.",
+  "sources": [
+    {
+      "file_path": "data/raw/vllm-0.10.1/vllm/worker/model_runner.py",
+      "first_character_index": 73641,
+      "last_character_index": 74639
+    }
+  ],
+  "difficulty": "synthetic",
+  "is_valid": true
+}
+```
+
+```json
+{
+  "question_id": "4a5b9aca-fbf7-486d-b210-47913db68ba7",
+  "question": "What condition prevents tensors from being moved to device in FlashInfer attention backend's prepare method?",
+  "answer": "When `self.is_profile_run` is True, the tensors (paged_kv_indptr, paged_kv_last_page_len, block_table_bound, seq_lens_tensor, and paged_kv_indices) are not moved to the device because flash attention is used for profiling to determine the number of blocks, so flashinfer input preparation is skipped.",
+  "sources": [
+    {
+      "file_path": "data/raw/vllm-0.10.1/vllm/attention/backends/flashinfer.py",
+      "first_character_index": 20391,
+      "last_character_index": 21671
+    }
+  ],
+  "difficulty": "synthetic",
+  "is_valid": true
+}
+```
+
+```json
+{
+  "question_id": "cc784ab6-ef8a-402d-b874-4160ec7c87f1",
+  "question": "What determines whether custom allreduce is enabled in vLLM's CudaCommunicator?",
+  "answer": "Custom allreduce is enabled only when \"tp\" is present in the unique_name parameter and the global _ENABLE_CUSTOM_ALL_REDUCE flag is True. If \"tp\" is not in unique_name, use_custom_allreduce is set to False regardless of the global flag.",
+  "sources": [
+    {
+      "file_path": "data/raw/vllm-0.10.1/vllm/distributed/device_communicators/cuda_communicator.py",
+      "first_character_index": 683,
+      "last_character_index": 1657
+    }
+  ],
+  "difficulty": "synthetic",
+  "is_valid": true
+}
+```
+
+```json
+{
+  "question_id": "92d69198-b21e-416c-a8ba-bc8a6653c4d9",
+  "question": "What conditions must be met for use_aiter_and_is_supported to be True in vLLM's FP8 quantization?",
+  "answer": "For use_aiter_and_is_supported to be True, all four conditions must be met: the platform must be ROCm, VLLM_ROCM_USE_AITER environment variable must be set, VLLM_ROCM_USE_AITER_LINEAR environment variable must be set, and the platform must support FP8_FNUZ format.",
+  "sources": [
+    {
+      "file_path": "data/raw/vllm-0.10.1/vllm/model_executor/layers/quantization/fp8.py",
+      "first_character_index": 8412,
+      "last_character_index": 9519
+    }
+  ],
+  "difficulty": "synthetic",
+  "is_valid": true
+}
+```
+
+```json
+{
+  "question_id": "ef591476-8135-4e25-baa9-96c42dbe3ee5",
+  "question": "What is the default value of tie_word_embeddings in vLLM's FalconForCausalLM class when the config doesn't specify it?",
+  "answer": "True. The FalconForCausalLM class sets tie_word_embeddings to True by default when config.tie_word_embeddings is None, because only Falcon-11B doesn't share lm_head weight with word embeddings and previous Falcon models don't have the tie_word_embeddings config.",
+  "sources": [
+    {
+      "file_path": "data/raw/vllm-0.10.1/vllm/model_executor/models/falcon.py",
+      "first_character_index": 18924,
+      "last_character_index": 19993
+    }
+  ],
+  "difficulty": "synthetic",
+  "is_valid": true
+}
+```

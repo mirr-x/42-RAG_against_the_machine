@@ -105,6 +105,9 @@ class Generation:
                 "The language model returned an invalid response."
             )
 
+        answer = generated[0]["generated_text"]
+        cleaned_answer = self.clean_generated_answer(answer)
+
         return MinimalAnswer(
             question_id=(
                 question_id if question_id is not None else str(uuid.uuid4())
@@ -118,8 +121,23 @@ class Generation:
                 )
                 for source in retrieved_sources
             ],
-            answer=generated[0]["generated_text"],
+            answer=cleaned_answer,
         )
+
+    @staticmethod
+    def clean_generated_answer(answer: str) -> str:
+        """Remove whitespace and contradictory unavailable suffixes."""
+        unavailable = (
+            "I cannot find the answer in the provided sources."
+        )
+        cleaned = answer.strip()
+        if cleaned.endswith(unavailable):
+            before = cleaned[: -len(unavailable)].strip(" \n\t-:")
+            if before:
+                cleaned = before
+            else:
+                cleaned = unavailable
+        return cleaned
 
     def generate_batch(
         self,
